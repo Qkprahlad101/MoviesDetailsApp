@@ -102,4 +102,7 @@ dependencies {
     // 🔹 OkHttp Logging Interceptor (for debugging)
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    // 🔹 Coil (Image Loading)
+    implementation(libs.coil.compose)
+
 }

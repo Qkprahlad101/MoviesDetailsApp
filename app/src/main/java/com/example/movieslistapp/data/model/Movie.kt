@@ -1,20 +1,46 @@
 package com.example.movieslistapp.data.model
 
-import com.google.gson.annotations.SerializedName
-
 data class Movie(
-    @SerializedName("imdbID") val imdbID: String,
-    @SerializedName("Title")  val title: String,
-    @SerializedName("Year")   val year: String,
-    @SerializedName("Type")   val type: String,
-    @SerializedName("Poster") val poster: String,
-    // Details fields (optional for search)
-    @SerializedName("Plot")   val plot: String? = null,
-    @SerializedName("imdbRating") val imdbRating: String? = null
+    val Title: String,
+    val Year: String,
+    val Poster: String,
+    val imdbID: String
 )
 
-data class MoviesListResponse(
-    @SerializedName("Search") val search: List<Movie>?,
-    @SerializedName("totalResults") val totalResults: String?,
-    @SerializedName("Response") val response: String
+data class MovieDetails(
+    val Title: String,
+    val Year: String,
+    val Rated: String?,
+    val Released: String?,
+    val Runtime: String?,
+    val Genre: String?,
+    val Director: String?,
+    val Writer: String?,
+    val Actors: String?,
+    val Plot: String?,
+    val Language: String?,
+    val Country: String?,
+    val Awards: String?,
+    val Poster: String,
+    val Ratings: List<Rating>?,
+    val Metascore: String?,
+    val imdbRating: String?,
+    val imdbVotes: String?,
+    val imdbID: String,
+    val Type: String,
+    val DVD: String?,
+    val BoxOffice: String?,
+    val Production: String?,
+    val Website: String?,
+    val Response: String
+)
+
+data class Rating(
+    val Source: String,
+    val Value: String
+)
+data class MovieResponse(
+    val Search: List<Movie>?,
+    val Response: String,
+    val Error: String?
 )

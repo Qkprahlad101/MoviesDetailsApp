@@ -1,18 +1,18 @@
 package com.example.movieslistapp.data.repository
 
 import com.example.movieslistapp.data.ApiService
-import com.example.movieslistapp.data.model.Movie
-import com.example.movieslistapp.data.model.MoviesListResponse
+import com.example.movieslistapp.data.model.MovieDetails
+import com.example.movieslistapp.data.model.MovieResponse
 
 class GetMoviesRepository(
     private val apiService : ApiService
 ) {
 
-    suspend fun getMoviesListFromSearch(query : String, currentPage: Int) : MoviesListResponse {
+    suspend fun getMoviesListFromSearch(query : String, currentPage: Int) : MovieResponse {
         return apiService.getMoviesListFromSearch(query, currentPage)
     }
 
-    suspend fun getMovieDetails(imdbId: String) : Movie {
+    suspend fun getMovieDetails(imdbId: String) : MovieDetails {
         return apiService.getMovieDetails(imdbId)
     }
 }
