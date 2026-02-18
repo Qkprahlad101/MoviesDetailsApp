@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +36,7 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -81,7 +81,7 @@ fun MoviesListScreen(
     var sortOrder by remember { mutableStateOf<SortOrder>(SortOrder.ASC) }
 
     LaunchedEffect(query.value) {
-        if (query.value.length > 3) {
+        if (query.value.length > 2) {
             viewModel.getSearchMovieResult(query.value.trim())
         } else {
             viewModel.getSearchMovieResult("")
@@ -105,7 +105,8 @@ fun MoviesListScreen(
                     leadingIcon = { Icons.Default.Search },
                     singleLine = true,
                     label = { Text("Search a Movie..") },
-                    isError = if (query.value.length < 4) true else false
+                    isError = if (query.value.length < 2) true else false,
+                    shape = RoundedCornerShape(8.dp),
                 )
 
                 if (state.value.movies.isNotEmpty()) {
@@ -174,11 +175,11 @@ fun MoviesListScreen(
                 .fillMaxSize()
         ) {
 
-            if (state.value.movies.isNotEmpty() && selectedMovie.value == null) {
+            if (state.value.movies.isNotEmpty()) {
 
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)
+                    modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp),
                 ) {
                     item {
                         DropdownMenu(expanded = filterDropDownExpanded, onDismissRequest = {}) { }
