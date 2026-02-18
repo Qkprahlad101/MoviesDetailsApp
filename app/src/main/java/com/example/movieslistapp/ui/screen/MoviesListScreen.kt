@@ -1,6 +1,7 @@
 package com.example.movieslistapp.ui.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -136,7 +138,6 @@ fun MoviesListScreen(
                                 }
                             )
 
-                            // Sort by Year
                             DropdownMenuItem(
                                 text = { Text("Year (Oldest First)") },
                                 onClick = {
@@ -154,7 +155,6 @@ fun MoviesListScreen(
                                 }
                             )
 
-                            // Clear filter
                             DropdownMenuItem(
                                 text = { Text("Clear Filter") },
                                 onClick = {
@@ -174,7 +174,7 @@ fun MoviesListScreen(
                 .fillMaxSize()
         ) {
 
-            if (state.value.movies.isNotEmpty()) {
+            if (state.value.movies.isNotEmpty() && selectedMovie.value == null) {
 
                 LazyColumn(
                     state = listState,
@@ -227,14 +227,23 @@ fun MoviesListScreen(
 
     selectedMovie.value?.let {
         Box(
-            modifier = Modifier.fillMaxSize().padding(16.dp)
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.onBackground)
         ) {
-            MovieDetailsScreen(
-                it,
-                { selectedMovie.value = null },
-                { viewModel.getMovieDetails(it.imdbID) },
-                state
-            )
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .fillMaxHeight(0.85f).align(Alignment.Center),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                MovieDetailsScreen(
+                    it,
+                    { selectedMovie.value = null },
+                    { viewModel.getMovieDetails(it.imdbID) },
+                    state
+                )
+            }
         }
     }
 
@@ -242,6 +251,7 @@ fun MoviesListScreen(
         listState = listState,
         onLoadMore = { viewModel.getSearchMovieResult(viewModel.movieQuery) }
     )
+
 }
 
 @Composable
@@ -287,7 +297,9 @@ fun MovieDetailsScreen(
     }
 
     Surface(
-        modifier = Modifier.fillMaxSize().padding(8.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp)
     ) {
         if (state.value.isLoading) {
             Box(
