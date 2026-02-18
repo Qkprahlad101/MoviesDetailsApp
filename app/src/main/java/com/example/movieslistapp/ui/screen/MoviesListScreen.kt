@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,12 +19,18 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -46,11 +52,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.movieslistapp.data.model.Movie
-import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.ui.PaginationHelper
 import com.example.movieslistapp.ui.UiState
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
+import com.example.movieslistarchless.utils.SortOption
+import com.example.movieslistarchless.utils.SortOrder
+import com.example.movieslistarchless.utils.Utils.getFilterDisplayName
+import com.example.movieslistarchless.utils.sortMovies
 import org.koin.androidx.compose.koinViewModel
+import kotlin.collections.isNotEmpty
+
 
 @Composable
 fun MoviesListScreen(
@@ -59,46 +70,129 @@ fun MoviesListScreen(
 ) {
 
     val state = viewModel.uiState.collectAsStateWithLifecycle()
-
     val listState = rememberLazyListState()
-
     var query = remember { mutableStateOf("") }
-
     var selectedMovie = remember { mutableStateOf<Movie?>(null) }
-    LazyColumn(
-        state = listState,
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
 
-        stickyHeader {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.TopCenter
-            ) {
+    var filterDropDownExpanded by remember { mutableStateOf(false) }
+    var sortBy by remember { mutableStateOf<SortOption>(SortOption.NONE) }
+    var sortOrder by remember { mutableStateOf<SortOrder>(SortOrder.ASC) }
+
+    LaunchedEffect(query.value) {
+        if (query.value.length > 3) {
+            viewModel.getSearchMovieResult(query.value.trim())
+        } else {
+            viewModel.getSearchMovieResult("")
+        }
+    }
+
+    val sortedMovies = sortMovies(state.value.movies, sortBy, sortOrder)
+
+    Scaffold(
+        modifier = modifier.padding(16.dp),
+        topBar = {
+            Column {
                 OutlinedTextField(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     value = query.value,
                     onValueChange = {
                         query.value = it
-                        viewModel.getSearchMovieResult(it.trim())
                     },
-                    label = { Text("Search a Movie..") }
+                    leadingIcon = { Icons.Default.Search },
+                    singleLine = true,
+                    label = { Text("Search a Movie..") },
+                    isError = if (query.value.length < 4) true else false
                 )
+
+                if (state.value.movies.isNotEmpty()) {
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        SuggestionChip(
+                            onClick = { filterDropDownExpanded = !filterDropDownExpanded },
+                            label = {
+                                Text("Filter: ${getFilterDisplayName(sortBy, sortOrder)}")
+                            }
+                        )
+
+                        DropdownMenu(
+                            expanded = filterDropDownExpanded,
+                            onDismissRequest = { filterDropDownExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Title (A-Z)") },
+                                onClick = {
+                                    sortBy = SortOption.TITLE
+                                    sortOrder = SortOrder.ASC
+                                    filterDropDownExpanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Title (Z-A)") },
+                                onClick = {
+                                    sortBy = SortOption.TITLE
+                                    sortOrder = SortOrder.DESC
+                                    filterDropDownExpanded = false
+                                }
+                            )
+
+                            // Sort by Year
+                            DropdownMenuItem(
+                                text = { Text("Year (Oldest First)") },
+                                onClick = {
+                                    sortBy = SortOption.YEAR
+                                    sortOrder = SortOrder.ASC
+                                    filterDropDownExpanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Year (Newest First)") },
+                                onClick = {
+                                    sortBy = SortOption.YEAR
+                                    sortOrder = SortOrder.DESC
+                                    filterDropDownExpanded = false
+                                }
+                            )
+
+                            // Clear filter
+                            DropdownMenuItem(
+                                text = { Text("Clear Filter") },
+                                onClick = {
+                                    sortBy = SortOption.NONE
+                                    filterDropDownExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+        ) {
 
-        items(
-            items = state.value.movies,
-            key = { it.imdbID }
-        ) { movie ->
-            MovieItem(movie = movie, { selectedMovie.value = it })
-        }
+            if (state.value.movies.isNotEmpty()) {
 
-        if (state.value.isLoading) {
-            item {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)
+                ) {
+                    item {
+                        DropdownMenu(expanded = filterDropDownExpanded, onDismissRequest = {}) { }
+                    }
+                    items(sortedMovies, key = { it.imdbID }) {
+                        MovieItem(it) { it ->
+                            selectedMovie.value = it
+                        }
+                    }
+                }
+            }
+
+            if (state.value.isLoading) {
+
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -107,10 +201,8 @@ fun MoviesListScreen(
                 }
 
             }
-        }
 
-        if (state.value.error != null) {
-            item {
+            if (state.value.error != null) {
 
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -126,20 +218,24 @@ fun MoviesListScreen(
                             fontSize = 16.sp
                         )
                     )
+
                 }
-
             }
-        }
 
+        }
     }
 
     selectedMovie.value?.let {
-        MovieDetailsScreen(
-            it,
-            { selectedMovie.value = null },
-            { viewModel.getMovieDetails(it.imdbID) },
-            state
-        )
+        Box(
+            modifier = Modifier.fillMaxSize().padding(16.dp)
+        ) {
+            MovieDetailsScreen(
+                it,
+                { selectedMovie.value = null },
+                { viewModel.getMovieDetails(it.imdbID) },
+                state
+            )
+        }
     }
 
     PaginationHelper(
@@ -191,7 +287,7 @@ fun MovieDetailsScreen(
     }
 
     Surface(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().padding(8.dp)
     ) {
         if (state.value.isLoading) {
             Box(
