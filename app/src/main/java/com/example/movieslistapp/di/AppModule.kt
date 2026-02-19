@@ -1,11 +1,10 @@
 package com.example.movieslistapp.di
 
 import androidx.room.Room
-import com.example.movieslistapp.BuildConfig
+import com.example.movieslistapp.BuildConfig.API_KEY
 import com.example.movieslistapp.data.ApiService
 import com.example.movieslistapp.data.repository.GetMoviesRepository
 import com.example.movieslistapp.db.MovieDatabase
-import com.example.movieslistapp.db.converter.Converters
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -39,7 +38,7 @@ val appModule = module {
             .addInterceptor { chain ->
                 val original = chain.request()
                 val url = original.url.newBuilder()
-                    .addQueryParameter("apikey", BuildConfig.API_KEY)
+                    .addQueryParameter("apikey", API_KEY)
                     .build()
                 chain.proceed(original.newBuilder().url(url).build())
             }

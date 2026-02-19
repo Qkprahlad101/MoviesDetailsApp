@@ -1,5 +1,4 @@
-package com.example.movieslistarchless.utils
-
+package com.example.movieslistapp.utils
 import com.example.movieslistapp.data.model.Movie
 
 // Filter options

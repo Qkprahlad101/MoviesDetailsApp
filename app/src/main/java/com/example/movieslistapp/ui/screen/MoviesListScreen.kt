@@ -33,10 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -63,14 +60,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.example.movieslistapp.data.model.Movie
 import com.example.movieslistapp.ui.PaginationHelper
@@ -79,10 +74,10 @@ import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerMovieItem
 import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
-import com.example.movieslistarchless.utils.SortOption
-import com.example.movieslistarchless.utils.SortOrder
-import com.example.movieslistarchless.utils.Utils.getFilterDisplayName
-import com.example.movieslistarchless.utils.sortMovies
+import com.example.movieslistapp.utils.SortOption
+import com.example.movieslistapp.utils.SortOrder
+import com.example.movieslistapp.utils.Utils.getFilterDisplayName
+import com.example.movieslistapp.utils.sortMovies
 import org.koin.androidx.compose.koinViewModel
 import kotlin.collections.isNotEmpty
 
@@ -327,7 +322,7 @@ fun MoviesListScreen(
                         DropdownMenu(expanded = filterDropDownExpanded, onDismissRequest = {}) { }
                     }
                     items(sortedMovies, key = { it.imdbID }) {
-                        MovieItem(it) { it ->
+                        MovieItem(it) {
                             Log.d("test", "MovieItem: selectedMovie.value: ${selectedMovie.value}")
                             selectedMovie.value = it
                         }
