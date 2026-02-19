@@ -29,7 +29,7 @@ class MoviesViewModel(
     var movieQuery : String = ""
 
     fun getMovieDetails(imdbId: String) {
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true, movieDetails = null) } // Clear previous details
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val movieDetails = getMoviesRepository.getMovieDetails(imdbId)
