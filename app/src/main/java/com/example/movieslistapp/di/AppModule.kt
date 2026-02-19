@@ -1,11 +1,15 @@
 package com.example.movieslistapp.di
 
+import androidx.room.Room
 import com.example.movieslistapp.BuildConfig
 import com.example.movieslistapp.data.ApiService
 import com.example.movieslistapp.data.repository.GetMoviesRepository
+import com.example.movieslistapp.db.MovieDatabase
+import com.example.movieslistapp.db.converter.Converters
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 import retrofit2.Retrofit
@@ -17,6 +21,16 @@ val appModule = module {
             level = HttpLoggingInterceptor.Level.BODY
         }
     }
+
+    single {
+        Room.databaseBuilder(
+            androidContext(),
+            MovieDatabase::class.java,
+            "movies_database"
+        ).build()
+    }
+
+    single{ get<MovieDatabase>().movieDao()}
 
     single {
         OkHttpClient.Builder()
@@ -43,6 +57,6 @@ val appModule = module {
     single {
         get<Retrofit>().create(ApiService::class.java)
     }
-    single { GetMoviesRepository(apiService = get()) }
-    viewModel { MoviesViewModel(getMoviesRepository = get()) }
+    single { GetMoviesRepository(apiService = get(), movieDao = get()) }
+    viewModel { MoviesViewModel(get()) }
 }

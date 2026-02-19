@@ -26,19 +26,16 @@ class MoviesViewModel(
     private var isEndReached = false
     private var isSearchInProgress = false
 
-    var selectedMovieDetails : Movie? = null
     var movieQuery : String = ""
 
     fun getMovieDetails(imdbId: String) {
-        if (isSearchInProgress) return
-        isSearchInProgress = true
         _uiState.update { it.copy(isLoading = true) }
-
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val movieDetails = getMoviesRepository.getMovieDetails(imdbId)
-                selectedMovieDetails = movieDetails
-                _uiState.update { it.copy(isLoading = false) }
+                movieDetails.let {
+                    _uiState.update { it.copy(isLoading = false, movieDetails = movieDetails) }
+                }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
@@ -74,8 +71,8 @@ class MoviesViewModel(
 
                 val response = getMoviesRepository.getMoviesListFromSearch(query, currentPage)
 
-                if (response.response == "True") {
-                    val newItems = response.search ?: emptyList()
+                if (response.Response == "True") {
+                    val newItems = response.Search ?: emptyList()
                     if (newItems.isEmpty()) {
                         isEndReached = true
                     }

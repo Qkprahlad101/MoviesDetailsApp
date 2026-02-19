@@ -1,13 +1,13 @@
-package com.example.movieslistapp.data.model
+package com.example.movieslistapp.db.entity
 
-data class Movie(
-    val Title: String,
-    val Year: String,
-    val Poster: String,
-    val imdbID: String
-)
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.example.movieslistapp.data.model.Rating
 
-data class MovieDetails(
+
+@Entity(tableName = "movie_details")
+data class MovieDetailsEntity(
+    @PrimaryKey val imdbID: String,
     val Title: String,
     val Year: String,
     val Rated: String?,
@@ -26,21 +26,10 @@ data class MovieDetails(
     val Metascore: String?,
     val imdbRating: String?,
     val imdbVotes: String?,
-    val imdbID: String,
     val Type: String,
     val DVD: String?,
     val BoxOffice: String?,
     val Production: String?,
     val Website: String?,
     val Response: String
-)
-
-data class Rating(
-    val Source: String,
-    val Value: String
-)
-data class MovieResponse(
-    val Search: List<Movie>?,
-    val Response: String,
-    val Error: String?
 )
