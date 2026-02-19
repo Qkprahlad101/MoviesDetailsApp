@@ -27,7 +27,9 @@ val appModule = module {
             androidContext(),
             MovieDatabase::class.java,
             "movies_database"
-        ).build()
+        ).addMigrations(MovieDatabase.MIGRATION_1_2)
+            .fallbackToDestructiveMigration().build()
+
     }
 
     single{ get<MovieDatabase>().movieDao()}

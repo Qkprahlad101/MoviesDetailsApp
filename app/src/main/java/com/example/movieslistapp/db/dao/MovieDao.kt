@@ -20,4 +20,16 @@ interface MovieDao {
 
     @Query("SELECT * FROM movie_details WHERE imdbID = :imdbId")
     suspend fun getMovieDetails(imdbId: String): MovieDetailsEntity?
+
+    @Query("SELECT COUNT(*) FROM movies")
+    suspend fun getMovieCount(): Int
+
+    @Query("SELECT COUNT(*) FROM movie_details")
+    suspend fun getMovieDetailsCount(): Int
+
+    @Query("DELETE FROM movies WHERE imdbID IN (SELECT imdbID FROM movies ORDER BY timestamp ASC LIMIT :limit)")
+    suspend fun deleteOldestMovies(limit: Int)
+
+    @Query("DELETE FROM movie_details WHERE imdbID IN (SELECT imdbID FROM movie_details ORDER BY timestamp ASC LIMIT :limit)")
+    suspend fun deleteOldestMovieDetails(limit: Int)
 }

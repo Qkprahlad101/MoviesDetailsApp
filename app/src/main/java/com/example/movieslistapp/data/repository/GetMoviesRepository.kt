@@ -16,8 +16,26 @@ class GetMoviesRepository(
     private val movieDao: MovieDao
 ) {
 
+    companion object {
+        private const val MAX_DB_MOVIES = 200
+        private const val MAX_DB_MOVIE_DETAILS = 200
+    }
+
     private val movieDetailsCache = LruCache<String, MovieDetails>(50)
     private val moviesListCache = LruCache<String, MovieResponse>(20)
+
+    private suspend fun enforceDatabaseLimits() {
+        val movieCount = movieDao.getMovieCount()
+        val detailsCount = movieDao.getMovieDetailsCount()
+
+        if(movieCount > MAX_DB_MOVIES) {
+            movieDao.deleteOldestMovies(movieCount - MAX_DB_MOVIES)
+        }
+
+        if(detailsCount > MAX_DB_MOVIE_DETAILS) {
+            movieDao.deleteOldestMovieDetails(detailsCount - MAX_DB_MOVIE_DETAILS)
+        }
+    }
     suspend fun getMoviesListFromSearch(query: String, currentPage: Int): MovieResponse {
 
         //check in cache
@@ -39,6 +57,7 @@ class GetMoviesRepository(
             val response = apiService.getMoviesListFromSearch(query, currentPage)
             response.Search?.let { movies ->
                 movieDao.insertMovies(movies.map { it.toMovieEntity(query) })
+                enforceDatabaseLimits()
             }
             response
         }
@@ -58,6 +77,7 @@ class GetMoviesRepository(
             //api call
             val details = apiService.getMovieDetails(imdbId)
             movieDao.insertMovieDetails(details.toMovieDetailsEntity())
+            enforceDatabaseLimits()
             details
         }
     }
