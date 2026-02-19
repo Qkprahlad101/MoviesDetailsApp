@@ -141,7 +141,17 @@ fun MoviesListScreen(
                                     }
                                 }
                             },
-                            placeholder = { Text("Search for your favorite movies...") },
+                            placeholder = {
+                                Text(
+                                    text = "Search for your favorite movies...",
+                                    style = TextStyle(
+                                        color = MaterialTheme.colorScheme.inversePrimary,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Normal
+                                    ),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -325,14 +335,17 @@ fun MoviesListScreen(
 
     selectedMovie.value?.let {
         Box(
-            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
-                .clickable{ selectedMovie.value = null }
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
+                .clickable { selectedMovie.value = null }
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
-                    .fillMaxHeight(0.85f).align(Alignment.Center)
-                    .clickable{},
+                    .fillMaxHeight(0.85f)
+                    .align(Alignment.Center)
+                    .clickable {},
                 shape = RoundedCornerShape(24.dp),
                 elevation = CardDefaults.cardElevation(8.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
