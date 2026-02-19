@@ -496,13 +496,30 @@ fun MovieDetailsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    AsyncImage(
+
+                    SubcomposeAsyncImage(
                         model = details.Poster,
                         contentDescription = null,
                         modifier = Modifier
                             .size(120.dp, 180.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp, 150.dp)
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                                    .background(ShimmerBrush())
+                            )
+                        },
+                        error = {
+                            MovieImagePlaceholder(
+                                modifier = Modifier
+                                    .size(100.dp, 150.dp)
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
+                                showIcon = true
+                            )
+                        }
                     )
 
                     Column(
