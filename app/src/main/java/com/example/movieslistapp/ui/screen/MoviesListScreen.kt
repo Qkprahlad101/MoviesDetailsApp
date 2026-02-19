@@ -60,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
@@ -227,7 +228,7 @@ fun MoviesListScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-
+            Spacer(modifier = Modifier.fillMaxWidth().height(2.dp).background(Color.LightGray))
             if (state.value.movies.isEmpty() && !state.value.isLoading && query.value.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
