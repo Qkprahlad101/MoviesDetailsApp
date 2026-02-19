@@ -81,4 +81,16 @@ class GetMoviesRepository(
             details
         }
     }
+
+    suspend fun getAllGenres(): List<String> {
+        return movieDao.getAllGenres()
+    }
+
+    suspend fun getTopRatedMoviesByGenre(genre: String): List<MovieDetails> {
+        return movieDao.getTopRatedMoviesByGenre(genre).map { it.toMovieDetails() }
+    }
+
+    suspend fun getTopRatedMoviesOverall(): List<MovieDetails> {
+        return movieDao.getTopRatedMoviesOverall().map { it.toMovieDetails() }
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.movieslistapp.ui.screen
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -69,9 +71,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.example.movieslistapp.data.model.Movie
 import com.example.movieslistapp.ui.PaginationHelper
 import com.example.movieslistapp.ui.UiState
+import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
+import com.example.movieslistapp.ui.screen.shimmer.ShimmerMovieItem
+import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import com.example.movieslistarchless.utils.SortOption
 import com.example.movieslistarchless.utils.SortOrder
@@ -96,6 +102,18 @@ fun MoviesListScreen(
     var sortBy by remember { mutableStateOf<SortOption>(SortOption.NONE) }
     var sortOrder by remember { mutableStateOf<SortOrder>(SortOrder.ASC) }
 
+    val carouselGenres by viewModel.carouselGenres.collectAsStateWithLifecycle()
+    val carouselMovies by viewModel.carouselMovies.collectAsStateWithLifecycle()
+
+
+    var isCarouselLoading by remember { mutableStateOf(true)}
+
+    // Add this LaunchedEffect to load carousel data
+    LaunchedEffect(Unit) {
+        isCarouselLoading = true
+        viewModel.loadCarouselData()
+        isCarouselLoading = false
+    }
     LaunchedEffect(query.value) {
         if (query.value.length > 2) {
             viewModel.getSearchMovieResult(query.value.trim())
@@ -228,60 +246,76 @@ fun MoviesListScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            Spacer(modifier = Modifier.fillMaxWidth().height(2.dp).background(Color.LightGray))
+            Spacer(modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(Color.LightGray))
             if (state.value.movies.isEmpty() && !state.value.isLoading && query.value.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                if (isCarouselLoading) {
+                    // Show shimmer loading state
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "")
-                        val rotation by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = 360f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(2000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ), label = ""
-                        )
+                        items(5) { index ->
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    // Shimmer for category title
+                                    Box(
+                                        modifier = Modifier
+                                            .width(100.dp)
+                                            .height(24.dp)
+                                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(ShimmerBrush())
+                                    )
 
-                        Icon(
-                            Icons.Default.Menu,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(80.dp)
-                                .graphicsLayer { rotationZ = rotation },
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                        )
-
+                                    // Shimmer for movie items
+                                    LazyRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 16.dp)
+                                    ) {
+                                        items(10) { index ->
+                                            ShimmerMovieItem()
+                                        }
+                                    }
+                            }
+                        }
+                    }
+                } else if (carouselGenres.isNotEmpty()) {
+                    // Show actual carousel
+                    CarouselSection(
+                        carouselGenres = carouselGenres,
+                        carouselMovies = carouselMovies,
+                        onMovieClick = { movieDetails ->
+                            val movie = Movie(
+                                imdbID = movieDetails.imdbID,
+                                Title = movieDetails.Title,
+                                Year = movieDetails.Year,
+                                Poster = movieDetails.Poster
+                            )
+                            selectedMovie.value = movie
+                        }
+                    )
+                } else {
+                    // Show empty state
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = "No Movies Yet",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Text(
-                            text = "Start searching for your favorite movies!",
+                            text = "No movies in database. Start searching!",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-
-                        Button(
-                            onClick = {
-                                query.value = "action" // Suggest a popular search
-                            },
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Try Action Movies")
-                        }
                     }
                 }
             }
+
 
             if (state.value.movies.isNotEmpty()) {
 
@@ -294,6 +328,7 @@ fun MoviesListScreen(
                     }
                     items(sortedMovies, key = { it.imdbID }) {
                         MovieItem(it) { it ->
+                            Log.d("test", "MovieItem: selectedMovie.value: ${selectedMovie.value}")
                             selectedMovie.value = it
                         }
                     }
@@ -367,7 +402,6 @@ fun MoviesListScreen(
     )
 
 }
-
 @Composable
 fun MovieItem(movie: Movie, selectedMovie: (Movie) -> Unit) {
     Card(
@@ -378,13 +412,29 @@ fun MovieItem(movie: Movie, selectedMovie: (Movie) -> Unit) {
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = movie.Poster,
                 contentDescription = null,
                 modifier = Modifier
                     .size(100.dp, 150.dp)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp, 150.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .background(ShimmerBrush())
+                    )
+                },
+                error = {
+                    MovieImagePlaceholder(
+                        modifier = Modifier
+                            .size(100.dp, 150.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
+                        showIcon = true
+                    )
+                }
             )
             Column(modifier = Modifier.padding(start = 16.dp)) {
                 Text(text = movie.Title, style = MaterialTheme.typography.titleLarge, maxLines = 2)

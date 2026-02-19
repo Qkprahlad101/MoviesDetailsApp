@@ -3,6 +3,7 @@ package com.example.movieslistapp.ui.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.movieslistapp.data.model.Movie
+import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.data.repository.GetMoviesRepository
 import com.example.movieslistapp.ui.UiState
 import kotlinx.coroutines.CancellationException
@@ -28,6 +29,30 @@ class MoviesViewModel(
 
     var movieQuery : String = ""
 
+    // Add these new state variables
+    private val _carouselGenres = MutableStateFlow<List<String>>(emptyList())
+    val carouselGenres: StateFlow<List<String>> = _carouselGenres.asStateFlow()
+
+    private val _carouselMovies = MutableStateFlow<Map<String, List<MovieDetails>>>(emptyMap())
+    val carouselMovies: StateFlow<Map<String, List<MovieDetails>>> = _carouselMovies.asStateFlow()
+
+    // Add this method
+    fun loadCarouselData() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val genres = getMoviesRepository.getAllGenres()
+                _carouselGenres.value = genres
+
+                val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
+                genres.forEach { genre ->
+                    moviesByGenre[genre] = getMoviesRepository.getTopRatedMoviesByGenre(genre)
+                }
+                _carouselMovies.value = moviesByGenre
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
     fun getMovieDetails(imdbId: String) {
         _uiState.update { it.copy(isLoading = true, movieDetails = null) } // Clear previous details
         viewModelScope.launch(Dispatchers.IO) {
