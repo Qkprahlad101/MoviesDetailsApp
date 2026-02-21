@@ -74,6 +74,9 @@ dependencies {
     // 🔹 Compose BOM (handles ALL compose versions)
     implementation(platform("androidx.compose:compose-bom:2024.10.00"))
 
+    //material extended
+    implementation("androidx.compose.material:material-icons-extended")
+
 // 🔹 Core Compose
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
@@ -111,5 +114,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    //shimmer dependency
+    implementation("com.valentinilk.shimmer:compose-shimmer:1.3.0")
 
 }

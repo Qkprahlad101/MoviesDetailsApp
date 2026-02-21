@@ -1,4 +1,4 @@
-package com.example.movieslistarchless.utils
+package com.example.movieslistapp.utils
 
 object Utils {
     fun getFilterDisplayName(sortBy: SortOption, sortOrder: SortOrder): String {

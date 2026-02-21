@@ -31,5 +31,6 @@ data class MovieDetailsEntity(
     val BoxOffice: String?,
     val Production: String?,
     val Website: String?,
-    val Response: String
+    val Response: String,
+    val timestamp: Long = System.currentTimeMillis()
 )

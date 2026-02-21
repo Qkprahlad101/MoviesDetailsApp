@@ -10,4 +10,5 @@ data class MovieEntity (
     val Title: String,
     val Year: String,
     val Poster: String,
+    val timestamp: Long = System.currentTimeMillis()
 )

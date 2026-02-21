@@ -20,4 +20,31 @@ interface MovieDao {
 
     @Query("SELECT * FROM movie_details WHERE imdbID = :imdbId")
     suspend fun getMovieDetails(imdbId: String): MovieDetailsEntity?
+
+    @Query("SELECT COUNT(*) FROM movies")
+    suspend fun getMovieCount(): Int
+
+    @Query("SELECT COUNT(*) FROM movie_details")
+    suspend fun getMovieDetailsCount(): Int
+
+    @Query("DELETE FROM movies WHERE imdbID IN (SELECT imdbID FROM movies ORDER BY timestamp ASC LIMIT :limit)")
+    suspend fun deleteOldestMovies(limit: Int)
+
+    @Query("DELETE FROM movie_details WHERE imdbID IN (SELECT imdbID FROM movie_details ORDER BY timestamp ASC LIMIT :limit)")
+    suspend fun deleteOldestMovieDetails(limit: Int)
+
+    @Query("SELECT DISTINCT substr(trim(Genre), 1, instr(trim(Genre) || ',', ',') - 1) as genre FROM movie_details WHERE Genre IS NOT NULL AND Genre != ''")
+    suspend fun getAllGenres(): List<String>
+
+    @Query("""
+        SELECT * FROM movie_details 
+        WHERE Genre LIKE '%' || :genre || '%' 
+        AND imdbRating IS NOT NULL 
+        ORDER BY CAST(imdbRating AS REAL) DESC 
+        LIMIT 10
+    """)
+    suspend fun getTopRatedMoviesByGenre(genre: String): List<MovieDetailsEntity>
+
+    @Query("SELECT * FROM movie_details WHERE imdbRating IS NOT NULL ORDER BY CAST(imdbRating AS REAL) DESC LIMIT 10")
+    suspend fun getTopRatedMoviesOverall(): List<MovieDetailsEntity>
 }

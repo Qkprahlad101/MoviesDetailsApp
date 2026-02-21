@@ -1,5 +1,6 @@
 package com.example.movieslistapp.ui.screen
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,13 +17,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,8 +34,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
@@ -46,21 +53,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.example.movieslistapp.data.model.Movie
 import com.example.movieslistapp.ui.PaginationHelper
 import com.example.movieslistapp.ui.UiState
+import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
+import com.example.movieslistapp.ui.screen.shimmer.ShimmerMovieItem
+import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
-import com.example.movieslistarchless.utils.SortOption
-import com.example.movieslistarchless.utils.SortOrder
-import com.example.movieslistarchless.utils.Utils.getFilterDisplayName
-import com.example.movieslistarchless.utils.sortMovies
+import com.example.movieslistapp.utils.SortOption
+import com.example.movieslistapp.utils.SortOrder
+import com.example.movieslistapp.utils.Utils.getFilterDisplayName
+import com.example.movieslistapp.utils.sortMovies
 import org.koin.androidx.compose.koinViewModel
 import kotlin.collections.isNotEmpty
 
@@ -80,6 +91,18 @@ fun MoviesListScreen(
     var sortBy by remember { mutableStateOf<SortOption>(SortOption.NONE) }
     var sortOrder by remember { mutableStateOf<SortOrder>(SortOrder.ASC) }
 
+    val carouselGenres by viewModel.carouselGenres.collectAsStateWithLifecycle()
+    val carouselMovies by viewModel.carouselMovies.collectAsStateWithLifecycle()
+
+
+    var isCarouselLoading by remember { mutableStateOf(true)}
+
+    // Add this LaunchedEffect to load carousel data
+    LaunchedEffect(Unit) {
+        isCarouselLoading = true
+        viewModel.loadCarouselData()
+        isCarouselLoading = false
+    }
     LaunchedEffect(query.value) {
         if (query.value.length > 2) {
             viewModel.getSearchMovieResult(query.value.trim())
@@ -94,20 +117,58 @@ fun MoviesListScreen(
         modifier = modifier.padding(16.dp),
         topBar = {
             Column {
-                OutlinedTextField(
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    value = query.value,
-                    onValueChange = {
-                        query.value = it
-                    },
-                    leadingIcon = { Icons.Default.Search },
-                    singleLine = true,
-                    label = { Text("Search a Movie..") },
-                    isError = if (query.value.length < 2) true else false,
-                    shape = RoundedCornerShape(8.dp),
-                )
+                    elevation = CardDefaults.cardElevation(8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "🎬 Discover Movies",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+
+                        OutlinedTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = query.value,
+                            onValueChange = { query.value = it },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            trailingIcon = {
+                                if (query.value.isNotEmpty()) {
+                                    IconButton(onClick = { query.value = "" }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                    }
+                                }
+                            },
+                            placeholder = {
+                                Text(
+                                    text = "Search for your favorite movies...",
+                                    style = TextStyle(
+                                        color = MaterialTheme.colorScheme.inversePrimary,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Normal
+                                    ),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            )
+                        )
+                    }
+                }
 
                 if (state.value.movies.isNotEmpty()) {
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -174,6 +235,76 @@ fun MoviesListScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
+            Spacer(modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(Color.LightGray))
+            if (state.value.movies.isEmpty() && !state.value.isLoading && query.value.isEmpty()) {
+                if (isCarouselLoading) {
+                    // Show shimmer loading state
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(5) { index ->
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    // Shimmer for category title
+                                    Box(
+                                        modifier = Modifier
+                                            .width(100.dp)
+                                            .height(24.dp)
+                                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(ShimmerBrush())
+                                    )
+
+                                    // Shimmer for movie items
+                                    LazyRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 16.dp)
+                                    ) {
+                                        items(10) { index ->
+                                            ShimmerMovieItem()
+                                        }
+                                    }
+                            }
+                        }
+                    }
+                } else if (carouselGenres.isNotEmpty()) {
+                    // Show actual carousel
+                    CarouselSection(
+                        carouselGenres = carouselGenres,
+                        carouselMovies = carouselMovies,
+                        onMovieClick = { movieDetails ->
+                            val movie = Movie(
+                                imdbID = movieDetails.imdbID,
+                                Title = movieDetails.Title,
+                                Year = movieDetails.Year,
+                                Poster = movieDetails.Poster
+                            )
+                            selectedMovie.value = movie
+                        }
+                    )
+                } else {
+                    // Show empty state
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No movies in database. Start searching!",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
 
             if (state.value.movies.isNotEmpty()) {
 
@@ -185,7 +316,8 @@ fun MoviesListScreen(
                         DropdownMenu(expanded = filterDropDownExpanded, onDismissRequest = {}) { }
                     }
                     items(sortedMovies, key = { it.imdbID }) {
-                        MovieItem(it) { it ->
+                        MovieItem(it) {
+                            Log.d("test", "MovieItem: selectedMovie.value: ${selectedMovie.value}")
                             selectedMovie.value = it
                         }
                     }
@@ -228,14 +360,17 @@ fun MoviesListScreen(
 
     selectedMovie.value?.let {
         Box(
-            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
-                .clickable{ selectedMovie.value = null }
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f))
+                .clickable { selectedMovie.value = null }
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth(0.95f)
-                    .fillMaxHeight(0.85f).align(Alignment.Center)
-                    .clickable{},
+                    .fillMaxHeight(0.85f)
+                    .align(Alignment.Center)
+                    .clickable {},
                 shape = RoundedCornerShape(24.dp),
                 elevation = CardDefaults.cardElevation(8.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -256,7 +391,6 @@ fun MoviesListScreen(
     )
 
 }
-
 @Composable
 fun MovieItem(movie: Movie, selectedMovie: (Movie) -> Unit) {
     Card(
@@ -267,13 +401,29 @@ fun MovieItem(movie: Movie, selectedMovie: (Movie) -> Unit) {
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = movie.Poster,
                 contentDescription = null,
                 modifier = Modifier
                     .size(100.dp, 150.dp)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp, 150.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .background(ShimmerBrush())
+                    )
+                },
+                error = {
+                    MovieImagePlaceholder(
+                        modifier = Modifier
+                            .size(100.dp, 150.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
+                        showIcon = true
+                    )
+                }
             )
             Column(modifier = Modifier.padding(start = 16.dp)) {
                 Text(text = movie.Title, style = MaterialTheme.typography.titleLarge, maxLines = 2)
@@ -335,13 +485,30 @@ fun MovieDetailsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    AsyncImage(
+
+                    SubcomposeAsyncImage(
                         model = details.Poster,
                         contentDescription = null,
                         modifier = Modifier
                             .size(120.dp, 180.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                        loading = {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp, 150.dp)
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                                    .background(ShimmerBrush())
+                            )
+                        },
+                        error = {
+                            MovieImagePlaceholder(
+                                modifier = Modifier
+                                    .size(100.dp, 150.dp)
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
+                                showIcon = true
+                            )
+                        }
                     )
 
                     Column(
