@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "MoviesListApp"
 include(":app")
+include(":ai")

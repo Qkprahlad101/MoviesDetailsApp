@@ -130,6 +130,8 @@ fun MoviesListScreen(
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
+
+
                         Text(
                             text = "🎬 Discover Movies",
                             style = MaterialTheme.typography.headlineSmall,
@@ -235,10 +237,6 @@ fun MoviesListScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            Spacer(modifier = Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .background(Color.LightGray))
             if (state.value.movies.isEmpty() && !state.value.isLoading && query.value.isEmpty()) {
                 if (isCarouselLoading) {
                     // Show shimmer loading state
