@@ -17,6 +17,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|layoutDirection|screenLayout"
             android:theme="@style/Theme.MoviesListApp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
