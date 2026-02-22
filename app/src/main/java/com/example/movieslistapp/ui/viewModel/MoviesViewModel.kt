@@ -2,7 +2,6 @@ package com.example.movieslistapp.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.movieslistapp.data.model.Movie
 import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.data.repository.GetMoviesRepository
 import com.example.movieslistapp.ui.UiState
@@ -10,11 +9,16 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.aitrailersdk.TrailerAi
+import com.example.aitrailersdk.core.config.TrailerAiConfig
+import com.example.aitrailersdk.core.model.TrailerRequest
 
 class MoviesViewModel(
     private val getMoviesRepository: GetMoviesRepository
@@ -36,7 +40,26 @@ class MoviesViewModel(
     private val _carouselMovies = MutableStateFlow<Map<String, List<MovieDetails>>>(emptyMap())
     val carouselMovies: StateFlow<Map<String, List<MovieDetails>>> = _carouselMovies.asStateFlow()
 
-    // Add this method
+    private val trailerAi = TrailerAi.initialize(
+        TrailerAiConfig(
+            enableLogging = true
+        )
+    )
+
+    fun getTrailerForMovie(movieTitle: String, year: String? = null): Flow<String?> = flow {
+        val request = TrailerRequest(
+            movieTitle = movieTitle,
+            year = year
+        )
+
+        val result = trailerAi.findTrailer(request)
+        emit(
+            when (result) {
+                is com.example.aitrailersdk.core.model.TrailerResult.Success -> result.url
+                else -> null
+            }
+        )
+    }
     fun loadCarouselData() {
         viewModelScope.launch(Dispatchers.IO) {
             try {

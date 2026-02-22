@@ -1,5 +1,7 @@
 package com.example.movieslistapp.ui.screen
 
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -28,6 +30,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -67,6 +72,7 @@ import com.example.movieslistapp.ui.UiState
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerMovieItem
 import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
+import com.example.movieslistapp.ui.screen.utils.TrailerButton
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import com.example.movieslistapp.utils.SortOption
 import com.example.movieslistapp.utils.SortOrder
@@ -447,6 +453,39 @@ fun MovieDetailsScreen(
 
     LaunchedEffect(movie.imdbID) {
         getMovieDetails()
+    }
+
+    val context = LocalContext.current
+    var showTrailerDialog by remember { mutableStateOf(false) }
+    var trailerUrl by remember { mutableStateOf<String?>(null) }
+
+    // Your existing movie details...
+
+    TrailerButton(
+        movieTitle = movie.Title,
+        year = movie.Year
+    ) { url ->
+        trailerUrl = url
+        showTrailerDialog = true
+    }
+
+    if (showTrailerDialog && trailerUrl != null) {
+        AlertDialog(
+            onDismissRequest = { showTrailerDialog = false },
+            title = { Text("Watch Trailer") },
+            text = { Text("Open trailer in YouTube?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(trailerUrl))
+                        context.startActivity(intent)
+                        showTrailerDialog = false
+                    }
+                ) {
+                    Text("Watch")
+                }
+            }
+        )
     }
 
     Surface(

@@ -16,6 +16,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url = uri("/Users/prahladkumar/AndroidStudioProjects/AiTrailerSDK/app/build/localRepo")
+        }
     }
 }
 
