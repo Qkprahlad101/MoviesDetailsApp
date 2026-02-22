@@ -123,4 +123,6 @@ dependencies {
     // Add TrailerAI SDK
     implementation("com.example.aitrailersdk:trailerai-core:2.0.5")
 
+    implementation(project(":trailer-player"))
+
 }

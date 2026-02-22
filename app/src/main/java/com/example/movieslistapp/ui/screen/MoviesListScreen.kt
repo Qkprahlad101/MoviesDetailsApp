@@ -1,7 +1,5 @@
 package com.example.movieslistapp.ui.screen
 
-import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -30,8 +28,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,7 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,12 +68,13 @@ import com.example.movieslistapp.ui.UiState
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerMovieItem
 import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
-import com.example.movieslistapp.ui.screen.utils.TrailerButton
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import com.example.movieslistapp.utils.SortOption
 import com.example.movieslistapp.utils.SortOrder
 import com.example.movieslistapp.utils.Utils.getFilterDisplayName
 import com.example.movieslistapp.utils.sortMovies
+import com.example.trailer_player.TrailerPlayer
+import com.example.trailer_player.YoutubeUtils
 import org.koin.androidx.compose.koinViewModel
 import kotlin.collections.isNotEmpty
 
@@ -457,29 +454,8 @@ fun MovieDetailsScreen(
         getMovieDetails()
     }
 
-    val context = LocalContext.current
-    var showTrailerDialog by remember { mutableStateOf(false) }
-    var trailerUrl by remember { mutableStateOf<String?>(null) }
-
-
-    if (showTrailerDialog && trailerUrl != null) {
-        AlertDialog(
-            onDismissRequest = { showTrailerDialog = false },
-            title = { Text("Watch Trailer") },
-            text = { Text("Open trailer in YouTube?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(trailerUrl))
-                        context.startActivity(intent)
-                        showTrailerDialog = false
-                    }
-                ) {
-                    Text("Watch")
-                }
-            }
-        )
-    }
+    val trailerUrl by viewModel.getTrailerForMovie(movie.imdbID, movie.Title, movie.Year).collectAsState(initial = null)
+    val videoId = trailerUrl?.let { YoutubeUtils.extractVideoId(it) }
 
     Surface(
         modifier = Modifier
@@ -513,36 +489,52 @@ fun MovieDetailsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
+                // Top area: Video Player or Movie Poster
+                if (videoId != null) {
+                    TrailerPlayer(
+                        youtubeVideoId = videoId,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.Black),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        SubcomposeAsyncImage(
+                            model = details.Poster,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            loading = { CircularProgressIndicator(color = Color.White) }
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (trailerUrl == null) {
+                                CircularProgressIndicator(color = Color.White)
+                            } else {
+                                Text("No Trailer Available", color = Color.White)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-
-                    SubcomposeAsyncImage(
-                        model = details.Poster,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(120.dp, 180.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop,
-                        loading = {
-                            Box(
-                                modifier = Modifier
-                                    .size(100.dp, 150.dp)
-                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                                    .background(ShimmerBrush())
-                            )
-                        },
-                        error = {
-                            MovieImagePlaceholder(
-                                modifier = Modifier
-                                    .size(100.dp, 150.dp)
-                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
-                                showIcon = true
-                            )
-                        }
-                    )
-
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -562,15 +554,6 @@ fun MovieDetailsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TrailerButton(
-                            viewModel = viewModel,
-                            movieTitle = details.Title,
-                            year = details.Year
-                        ) { url ->
-                            trailerUrl = url
-                            showTrailerDialog = true
-                        }
                     }
                 }
 

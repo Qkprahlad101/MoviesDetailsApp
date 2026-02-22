@@ -32,5 +32,6 @@ data class MovieDetailsEntity(
     val Production: String?,
     val Website: String?,
     val Response: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val trailer: String? = null
 )

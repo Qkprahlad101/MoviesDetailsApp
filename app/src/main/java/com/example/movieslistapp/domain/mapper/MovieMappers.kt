@@ -10,14 +10,16 @@ fun Movie.toMovieEntity(query: String) = MovieEntity(
     query = query,
     Title = Title,
     Year = Year,
-    Poster = Poster
+    Poster = Poster,
+    trailer = trailer
 )
 
 fun MovieEntity.toMovie() = Movie(
     imdbID = imdbId,
     Title = Title,
     Year = Year,
-    Poster = Poster
+    Poster = Poster,
+    trailer = trailer
 )
 
 fun MovieDetails.toMovieDetailsEntity() = MovieDetailsEntity(
@@ -45,7 +47,8 @@ fun MovieDetails.toMovieDetailsEntity() = MovieDetailsEntity(
     BoxOffice = BoxOffice,
     Production = Production,
     Website = Website,
-    Response = Response
+    Response = Response,
+    trailer = trailer
 )
 
 fun MovieDetailsEntity.toMovieDetails() = MovieDetails(
@@ -73,5 +76,6 @@ fun MovieDetailsEntity.toMovieDetails() = MovieDetails(
     BoxOffice = BoxOffice,
     Production = Production,
     Website = Website,
-    Response = Response
+    Response = Response,
+    trailer = trailer
 )

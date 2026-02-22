@@ -45,21 +45,23 @@ class GetMoviesRepository(
 
         //check in db
         val dbMoviesList = movieDao.getMoviesByQuery(query)
-        return if (dbMoviesList.isNotEmpty()) {
-            MovieResponse(
+        if (dbMoviesList.isNotEmpty()) {
+            val response = MovieResponse(
                 Search = dbMoviesList.map { it.toMovie() },
                 Error = "",
                 Response = "True"
             )
+            moviesListCache.put(query, response)
+            return response
         } else {
-
             //api call
             val response = apiService.getMoviesListFromSearch(query, currentPage)
             response.Search?.let { movies ->
                 movieDao.insertMovies(movies.map { it.toMovieEntity(query) })
                 enforceDatabaseLimits()
+                moviesListCache.put(query, response)
             }
-            response
+            return response
         }
     }
 
@@ -71,14 +73,17 @@ class GetMoviesRepository(
 
         //check database
         val dbDetails = movieDao.getMovieDetails(imdbId)
-        return if (dbDetails != null) {
-            dbDetails.toMovieDetails()
+        if (dbDetails != null) {
+            val details = dbDetails.toMovieDetails()
+            movieDetailsCache.put(imdbId, details)
+            return details
         } else {
             //api call
             val details = apiService.getMovieDetails(imdbId)
             movieDao.insertMovieDetails(details.toMovieDetailsEntity())
             enforceDatabaseLimits()
-            details
+            movieDetailsCache.put(imdbId, details)
+            return details
         }
     }
 
@@ -92,5 +97,15 @@ class GetMoviesRepository(
 
     suspend fun getTopRatedMoviesOverall(): List<MovieDetails> {
         return movieDao.getTopRatedMoviesOverall().map { it.toMovieDetails() }
+    }
+
+    suspend fun getTrailerUrlFromDb(imdbId: String): String? {
+        // Check movie_details table first as it's more likely to have detailed info
+        return movieDao.getMovieDetailsTrailer(imdbId) ?: movieDao.getMovieTrailer(imdbId)
+    }
+
+    suspend fun updateTrailerUrl(imdbId: String, trailerUrl: String) {
+        movieDao.updateMovieDetailsTrailer(imdbId, trailerUrl)
+        movieDao.updateMovieTrailer(imdbId, trailerUrl)
     }
 }

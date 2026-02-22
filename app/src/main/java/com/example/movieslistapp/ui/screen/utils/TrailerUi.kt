@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TrailerButton(
     viewModel: MoviesViewModel,
+    imdbId: String,
     movieTitle: String,
     year: String? = null,
     onTrailerFound: (String) -> Unit
@@ -21,8 +22,8 @@ fun TrailerButton(
     Button(
         onClick = {
             scope.launch {
-                Log.d("TrailerButton", "Fetching trailer for: $movieTitle ($year)")
-                val trailerUrl = viewModel.getTrailerForMovie(movieTitle, year).first()
+                Log.d("TrailerButton", "Fetching trailer for: $movieTitle ($year), imdbId: $imdbId")
+                val trailerUrl = viewModel.getTrailerForMovie(imdbId, movieTitle, year).first()
                 Log.d("TrailerButton", "Trailer URL: $trailerUrl")
                 trailerUrl?.let { onTrailerFound(it) } ?: run {
                     Log.d("TrailerButton", "No trailer found for: $movieTitle")

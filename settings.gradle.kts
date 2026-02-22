@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "MoviesListApp"
 include(":app")
+include(":trailer-player")

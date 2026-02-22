@@ -50,20 +50,34 @@ class MoviesViewModel(
         )
     )
 
-    fun getTrailerForMovie(movieTitle: String, year: String? = null): Flow<String?> = flow {
+    fun getTrailerForMovie(imdbId: String, movieTitle: String, year: String? = null): Flow<String?> = flow {
+        // 1. Check DB first
+        val cachedTrailer = getMoviesRepository.getTrailerUrlFromDb(imdbId)
+        if (cachedTrailer != null) {
+            emit(cachedTrailer)
+            return@flow
+        }
+
+        // 2. If not in DB, call SDK
         val request = TrailerRequest(
             movieTitle = movieTitle,
             year = year
         )
 
         val result = trailerAi.findTrailer(request)
-        emit(
-            when (result) {
-                is com.example.aitrailersdk.core.model.TrailerResult.Success -> result.url
-                else -> null
-            }
-        )
+        val trailerUrl = when (result) {
+            is com.example.aitrailersdk.core.model.TrailerResult.Success -> result.url
+            else -> null
+        }
+
+        // 3. Update DB if trailer found
+        if (trailerUrl != null) {
+            getMoviesRepository.updateTrailerUrl(imdbId, trailerUrl)
+        }
+
+        emit(trailerUrl)
     }
+
     fun loadCarouselData() {
         viewModelScope.launch(Dispatchers.IO) {
             try {

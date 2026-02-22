@@ -47,4 +47,16 @@ interface MovieDao {
 
     @Query("SELECT * FROM movie_details WHERE imdbRating IS NOT NULL ORDER BY CAST(imdbRating AS REAL) DESC LIMIT 10")
     suspend fun getTopRatedMoviesOverall(): List<MovieDetailsEntity>
+
+    @Query("UPDATE movies SET trailer = :trailerUrl WHERE imdbId = :imdbId")
+    suspend fun updateMovieTrailer(imdbId: String, trailerUrl: String)
+
+    @Query("UPDATE movie_details SET trailer = :trailerUrl WHERE imdbID = :imdbId")
+    suspend fun updateMovieDetailsTrailer(imdbId: String, trailerUrl: String)
+
+    @Query("SELECT trailer FROM movies WHERE imdbId = :imdbId")
+    suspend fun getMovieTrailer(imdbId: String): String?
+
+    @Query("SELECT trailer FROM movie_details WHERE imdbID = :imdbId")
+    suspend fun getMovieDetailsTrailer(imdbId: String): String?
 }
