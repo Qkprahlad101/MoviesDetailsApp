@@ -385,7 +385,8 @@ fun MoviesListScreen(
                     it,
                     { selectedMovie.value = null },
                     { viewModel.getMovieDetails(it.imdbID) },
-                    state
+                    state,
+                    viewModel
                 )
             }
         }
@@ -447,7 +448,8 @@ fun MovieDetailsScreen(
     movie: Movie,
     dismiss: () -> Unit,
     getMovieDetails: () -> Unit,
-    state: State<UiState>
+    state: State<UiState>,
+    viewModel: MoviesViewModel
 ) {
     BackHandler(onBack = dismiss)
 
@@ -459,15 +461,6 @@ fun MovieDetailsScreen(
     var showTrailerDialog by remember { mutableStateOf(false) }
     var trailerUrl by remember { mutableStateOf<String?>(null) }
 
-    // Your existing movie details...
-
-    TrailerButton(
-        movieTitle = movie.Title,
-        year = movie.Year
-    ) { url ->
-        trailerUrl = url
-        showTrailerDialog = true
-    }
 
     if (showTrailerDialog && trailerUrl != null) {
         AlertDialog(
@@ -569,6 +562,15 @@ fun MovieDetailsScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TrailerButton(
+                            viewModel = viewModel,
+                            movieTitle = details.Title,
+                            year = details.Year
+                        ) { url ->
+                            trailerUrl = url
+                            showTrailerDialog = true
+                        }
                     }
                 }
 

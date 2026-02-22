@@ -17,7 +17,7 @@ android {
         localProperties.load(localPropertiesFile.inputStream())
     }
     val omdbApiKey = localProperties.getProperty("OMDB_API_KEY") ?: ""
-
+    val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
     defaultConfig {
         applicationId = "com.example.movieslistapp"
         minSdk = 24
@@ -26,7 +26,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
         buildConfigField("String", "API_KEY", "\"$omdbApiKey\"")
     }
 

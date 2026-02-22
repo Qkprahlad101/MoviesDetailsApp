@@ -1,7 +1,9 @@
 package com.example.movieslistapp.ui.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.movieslistapp.BuildConfig
 import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.data.repository.GetMoviesRepository
 import com.example.movieslistapp.ui.UiState
@@ -42,9 +44,14 @@ class MoviesViewModel(
 
     private val trailerAi = TrailerAi.initialize(
         TrailerAiConfig(
-            enableLogging = true
+            enableLogging = true,
+            geminiApiKey = BuildConfig.GEMINI_API_KEY
         )
     )
+
+    init {
+        Log.d("MoviesViewModel", "GEMINI_API_KEY length: ${BuildConfig.GEMINI_API_KEY.length}")
+    }
 
     fun getTrailerForMovie(movieTitle: String, year: String? = null): Flow<String?> = flow {
         val request = TrailerRequest(
