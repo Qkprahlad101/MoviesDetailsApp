@@ -19,6 +19,7 @@ class GetMoviesRepository(
     companion object {
         private const val MAX_DB_MOVIES = 200
         private const val MAX_DB_MOVIE_DETAILS = 200
+        private const val PAGE_SIZE = 10
     }
 
     private val movieDetailsCache = LruCache<String, MovieDetails>(50)
@@ -28,38 +29,44 @@ class GetMoviesRepository(
         val movieCount = movieDao.getMovieCount()
         val detailsCount = movieDao.getMovieDetailsCount()
 
-        if(movieCount > MAX_DB_MOVIES) {
+        if (movieCount > MAX_DB_MOVIES) {
             movieDao.deleteOldestMovies(movieCount - MAX_DB_MOVIES)
         }
 
-        if(detailsCount > MAX_DB_MOVIE_DETAILS) {
+        if (detailsCount > MAX_DB_MOVIE_DETAILS) {
             movieDao.deleteOldestMovieDetails(detailsCount - MAX_DB_MOVIE_DETAILS)
         }
     }
-    suspend fun getMoviesListFromSearch(query: String, currentPage: Int): MovieResponse {
 
+    suspend fun getMoviesListFromSearch(query: String, currentPage: Int): MovieResponse {
+        val cacheKey = "$query:$currentPage"
         //check in cache
-        moviesListCache.get(query)?.let {
+        moviesListCache.get(cacheKey)?.let {
             return it
         }
 
         //check in db
-        val dbMoviesList = movieDao.getMoviesByQuery(query)
+        val offset = (currentPage - 1) * PAGE_SIZE
+        val dbMoviesList = movieDao.getMoviesByQueryPaginated(query, PAGE_SIZE, offset)
         if (dbMoviesList.isNotEmpty()) {
             val response = MovieResponse(
-                Search = dbMoviesList.map { it.toMovie() },
+                Search = dbMoviesList.filter { it.Poster != "N/A" && it.Poster.isNotEmpty()
+                        && it.Title != "N/A" && it.Title.isNotEmpty() && it.Year != "N/A" && it.Year.isNotEmpty() }
+                    .map { it.toMovie() },
                 Error = "",
                 Response = "True"
             )
-            moviesListCache.put(query, response)
+            moviesListCache.put(cacheKey, response)
             return response
         } else {
             //api call
             val response = apiService.getMoviesListFromSearch(query, currentPage)
             response.Search?.let { movies ->
-                movieDao.insertMovies(movies.map { it.toMovieEntity(query) })
+                movieDao.insertMovies(movies.filter { it.Poster != "N/A" && it.Poster.isNotEmpty()
+                        && it.Title != "N/A" && it.Title.isNotEmpty() && it.Year != "N/A" && it.Year.isNotEmpty() }
+                    .map { it.toMovieEntity(query) })
                 enforceDatabaseLimits()
-                moviesListCache.put(query, response)
+                moviesListCache.put(cacheKey, response)
             }
             return response
         }

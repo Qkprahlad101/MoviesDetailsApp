@@ -15,6 +15,12 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE `query` = :searchQuery")
     suspend fun getMoviesByQuery(searchQuery: String): List<MovieEntity>
 
+    @Query("SELECT * FROM movies WHERE `query` = :searchQuery LIMIT :limit OFFSET :offset")
+    suspend fun getMoviesByQueryPaginated(searchQuery: String, limit: Int, offset: Int): List<MovieEntity>
+
+    @Query("SELECT COUNT(*) FROM movies WHERE `query` = :searchQuery")
+    suspend fun getMoviesCountByQuery(searchQuery: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMovieDetails(details: MovieDetailsEntity)
 

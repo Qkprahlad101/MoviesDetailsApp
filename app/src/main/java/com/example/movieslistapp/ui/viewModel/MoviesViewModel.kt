@@ -1,5 +1,6 @@
 package com.example.movieslistapp.ui.viewModel
 
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.movieslistapp.BuildConfig.GEMINI_API_KEY
@@ -7,6 +8,9 @@ import com.example.movieslistapp.BuildConfig.YOUTUBE_DATAV3_API_KEY
 import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.data.repository.GetMoviesRepository
 import com.example.movieslistapp.ui.UiState
+import com.example.aitrailersdk.TrailerAi
+import com.example.aitrailersdk.core.config.TrailerAiConfig
+import com.example.aitrailersdk.core.model.TrailerRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,9 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.example.aitrailersdk.TrailerAi
-import com.example.aitrailersdk.core.config.TrailerAiConfig
-import com.example.aitrailersdk.core.model.TrailerRequest
 
 class MoviesViewModel(
     private val getMoviesRepository: GetMoviesRepository
@@ -96,9 +97,13 @@ class MoviesViewModel(
 
                 val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
                 genres.forEach { genre ->
-                    // OMDB returns "N/A" for missing posters, so we filter those out as well.
+                    // OMDB returns "N/A" for missing posters. We also validate that the Poster field contains a valid URL pattern.
                     moviesByGenre[genre] = getMoviesRepository.getTopRatedMoviesByGenre(genre)
-                        .filter { it.Poster.isNotBlank() && it.Poster != "N/A" }
+                        .filter { movie ->
+                            movie.Poster.isNotBlank() &&
+                            movie.Poster != "N/A" &&
+                            Patterns.WEB_URL.matcher(movie.Poster).matches()
+                        }
                 }
                 _carouselMovies.value = moviesByGenre
             } catch (e: Exception) {
