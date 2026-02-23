@@ -2,7 +2,8 @@ package com.example.movieslistapp.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.movieslistapp.data.model.Movie
+import com.example.movieslistapp.BuildConfig.GEMINI_API_KEY
+import com.example.movieslistapp.BuildConfig.YOUTUBE_DATAV3_API_KEY
 import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.data.repository.GetMoviesRepository
 import com.example.movieslistapp.ui.UiState
@@ -10,11 +11,16 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.aitrailersdk.TrailerAi
+import com.example.aitrailersdk.core.config.TrailerAiConfig
+import com.example.aitrailersdk.core.model.TrailerRequest
 
 class MoviesViewModel(
     private val getMoviesRepository: GetMoviesRepository
@@ -36,7 +42,42 @@ class MoviesViewModel(
     private val _carouselMovies = MutableStateFlow<Map<String, List<MovieDetails>>>(emptyMap())
     val carouselMovies: StateFlow<Map<String, List<MovieDetails>>> = _carouselMovies.asStateFlow()
 
-    // Add this method
+    private val trailerAi = TrailerAi.initialize(
+        TrailerAiConfig(
+            enableLogging = true,
+            geminiApiKey = GEMINI_API_KEY,
+            youtubeApiKey = YOUTUBE_DATAV3_API_KEY
+        )
+    )
+
+    fun getTrailerForMovie(imdbId: String, movieTitle: String, year: String? = null): Flow<String?> = flow {
+        // 1. Check DB first
+        val cachedTrailer = getMoviesRepository.getTrailerUrlFromDb(imdbId)
+        if (cachedTrailer != null) {
+            emit(cachedTrailer)
+            return@flow
+        }
+
+        // 2. If not in DB, call SDK
+        val request = TrailerRequest(
+            movieTitle = movieTitle,
+            year = year
+        )
+
+        val result = trailerAi.findTrailer(request)
+        val trailerUrl = when (result) {
+            is com.example.aitrailersdk.core.model.TrailerResult.Success -> result.url
+            else -> null
+        }
+
+        // 3. Update DB if trailer found
+        if (trailerUrl != null) {
+            getMoviesRepository.updateTrailerUrl(imdbId, trailerUrl)
+        }
+
+        emit(trailerUrl)
+    }
+
     fun loadCarouselData() {
         viewModelScope.launch(Dispatchers.IO) {
             try {

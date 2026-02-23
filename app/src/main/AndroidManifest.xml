@@ -11,11 +11,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MoviesListApp">
+        android:theme="@style/Theme.MoviesListApp"
+        tools:replace="android:theme">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|layoutDirection|screenLayout"
             android:theme="@style/Theme.MoviesListApp">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

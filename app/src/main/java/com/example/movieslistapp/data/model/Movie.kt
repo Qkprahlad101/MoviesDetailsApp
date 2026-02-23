@@ -4,7 +4,8 @@ data class Movie(
     val Title: String,
     val Year: String,
     val Poster: String,
-    val imdbID: String
+    val imdbID: String,
+    val trailer: String? = null
 )
 
 data class MovieDetails(
@@ -32,7 +33,8 @@ data class MovieDetails(
     val BoxOffice: String?,
     val Production: String?,
     val Website: String?,
-    val Response: String
+    val Response: String,
+    val trailer: String? = null
 )
 
 data class Rating(

@@ -16,8 +16,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven {
+            url = uri("/Users/prahladkumar/AndroidStudioProjects/AiTrailerSDK/app/build/localRepo")
+        }
     }
 }
 
 rootProject.name = "MoviesListApp"
 include(":app")
+include(":trailer-player")

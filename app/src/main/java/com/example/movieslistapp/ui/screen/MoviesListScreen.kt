@@ -46,6 +46,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,6 +74,8 @@ import com.example.movieslistapp.utils.SortOption
 import com.example.movieslistapp.utils.SortOrder
 import com.example.movieslistapp.utils.Utils.getFilterDisplayName
 import com.example.movieslistapp.utils.sortMovies
+import com.example.trailer_player.TrailerPlayer
+import com.example.trailer_player.YoutubeUtils
 import org.koin.androidx.compose.koinViewModel
 import kotlin.collections.isNotEmpty
 
@@ -305,6 +309,38 @@ fun MoviesListScreen(
                 }
             }
 
+            if (state.value.movies.isEmpty() && !state.value.isLoading && query.value.isNotEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Text(
+                            text = "🔍",
+                            fontSize = 64.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No such movies found for \"${query.value}\"",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Please try again with a different keyword.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
 
             if (state.value.movies.isNotEmpty()) {
 
@@ -379,7 +415,8 @@ fun MoviesListScreen(
                     it,
                     { selectedMovie.value = null },
                     { viewModel.getMovieDetails(it.imdbID) },
-                    state
+                    state,
+                    viewModel
                 )
             }
         }
@@ -441,13 +478,17 @@ fun MovieDetailsScreen(
     movie: Movie,
     dismiss: () -> Unit,
     getMovieDetails: () -> Unit,
-    state: State<UiState>
+    state: State<UiState>,
+    viewModel: MoviesViewModel
 ) {
     BackHandler(onBack = dismiss)
 
     LaunchedEffect(movie.imdbID) {
         getMovieDetails()
     }
+
+    val trailerUrl by viewModel.getTrailerForMovie(movie.imdbID, movie.Title, movie.Year).collectAsState(initial = null)
+    val videoId = trailerUrl?.let { YoutubeUtils.extractVideoId(it) }
 
     Surface(
         modifier = Modifier
@@ -481,36 +522,52 @@ fun MovieDetailsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
+                // Top area: Video Player or Movie Poster
+                if (videoId != null) {
+                    TrailerPlayer(
+                        youtubeVideoId = videoId,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.Black),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        SubcomposeAsyncImage(
+                            model = details.Poster,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            loading = { CircularProgressIndicator(color = Color.White) }
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (trailerUrl == null) {
+                                CircularProgressIndicator(color = Color.White)
+                            } else {
+                                Text("No Trailer Available", color = Color.White)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-
-                    SubcomposeAsyncImage(
-                        model = details.Poster,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(120.dp, 180.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop,
-                        loading = {
-                            Box(
-                                modifier = Modifier
-                                    .size(100.dp, 150.dp)
-                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                                    .background(ShimmerBrush())
-                            )
-                        },
-                        error = {
-                            MovieImagePlaceholder(
-                                modifier = Modifier
-                                    .size(100.dp, 150.dp)
-                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
-                                showIcon = true
-                            )
-                        }
-                    )
-
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)

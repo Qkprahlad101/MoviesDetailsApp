@@ -12,7 +12,7 @@ import com.example.movieslistapp.db.entity.MovieEntity
 
 @Database(
     entities = [MovieEntity::class, MovieDetailsEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -28,6 +28,15 @@ abstract class MovieDatabase : RoomDatabase() {
 
                 //add timestamp column to movie_details table
                 db.execSQL("ALTER TABLE movie_details ADD COLUMN timestamp INTEGER NOT NULL DEFAULT ${System.currentTimeMillis()}")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2,3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                //add trailer column to movies table
+                db.execSQL("ALTER TABLE movies ADD COLUMN trailer TEXT")
+                //add trailer column to movie_details table
+                db.execSQL("ALTER TABLE movie_details ADD COLUMN trailer TEXT")
             }
         }
     }

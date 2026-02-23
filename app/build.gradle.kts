@@ -17,7 +17,8 @@ android {
         localProperties.load(localPropertiesFile.inputStream())
     }
     val omdbApiKey = localProperties.getProperty("OMDB_API_KEY") ?: ""
-
+    val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
+    val youtubeDataV3Key = localProperties.getProperty("YOUTUBE_DATA_V3") ?: ""
     defaultConfig {
         applicationId = "com.example.movieslistapp"
         minSdk = 24
@@ -26,7 +27,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        buildConfigField("String", "YOUTUBE_DATAV3_API_KEY", "\"$youtubeDataV3Key\"")
         buildConfigField("String", "API_KEY", "\"$omdbApiKey\"")
     }
 
@@ -117,5 +119,10 @@ dependencies {
 
     //shimmer dependency
     implementation("com.valentinilk.shimmer:compose-shimmer:1.3.0")
+
+    // Add TrailerAI SDK
+    implementation("com.example.aitrailersdk:trailerai-core:2.0.5")
+
+    implementation(project(":trailer-player"))
 
 }
