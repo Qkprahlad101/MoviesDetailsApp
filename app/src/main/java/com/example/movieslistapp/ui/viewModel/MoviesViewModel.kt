@@ -1,6 +1,5 @@
 package com.example.movieslistapp.ui.viewModel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.movieslistapp.BuildConfig.GEMINI_API_KEY
@@ -34,7 +33,8 @@ class MoviesViewModel(
     private var isEndReached = false
     private var isSearchInProgress = false
 
-    var movieQuery : String = ""
+    private val _movieQuery = MutableStateFlow("")
+    val movieQuery: StateFlow<String> = _movieQuery.asStateFlow()
 
     // Add these new state variables
     private val _carouselGenres = MutableStateFlow<List<String>>(emptyList())
@@ -50,6 +50,11 @@ class MoviesViewModel(
             youtubeApiKey = YOUTUBE_DATAV3_API_KEY
         )
     )
+
+    fun updateSearchQuery(query: String) {
+        _movieQuery.value = query
+        getSearchMovieResult(query)
+    }
 
     fun getTrailerForMovie(imdbId: String, movieTitle: String, year: String? = null): Flow<String?> = flow {
         if (movieTitle.isBlank()) {
@@ -91,7 +96,7 @@ class MoviesViewModel(
 
                 val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
                 genres.forEach { genre ->
-                    moviesByGenre[genre] = getMoviesRepository.getTopRatedMoviesByGenre(genre)
+                    moviesByGenre[genre] = getMoviesRepository.getTopRatedMoviesByGenre(genre).filter { it.Poster.isNotEmpty() } // Show movies in carousel with posters only
                 }
                 _carouselMovies.value = moviesByGenre
             } catch (e: Exception) {
@@ -105,11 +110,7 @@ class MoviesViewModel(
             try {
                 val movieDetails = getMoviesRepository.getMovieDetails(imdbId)
                 movieDetails.let {
-                    if (!it.Title.isEmpty()) {
-                        _uiState.update { it.copy(isLoading = false, movieDetails = movieDetails) }
-                    } else {
-                        _uiState.update { it.copy(error = "Movie Title is Empty!", isLoading = false) }
-                    }
+                    _uiState.update { it.copy(isLoading = false, movieDetails = movieDetails) }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -129,8 +130,8 @@ class MoviesViewModel(
             return
         }
 
-        if (query != movieQuery) {
-            movieQuery = query
+        if (query != _movieQuery.value) {
+            _movieQuery.value = query
             currentPage = 1
             isEndReached = false
             _uiState.update { it.copy(movies = emptyList()) }

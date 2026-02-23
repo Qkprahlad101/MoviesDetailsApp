@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +37,7 @@ import coil.compose.SubcomposeAsyncImage
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import com.example.trailer_player.TrailerPlayer
 import com.example.trailer_player.YoutubeUtils
+import kotlinx.coroutines.flow.emptyFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +55,14 @@ fun MovieDetailsScreen(
     }
 
     val movieDetails = state.movieDetails
-    val trailerUrl by viewModel.getTrailerForMovie(imdbId, movieDetails?.Title ?: "", movieDetails?.Year).collectAsState(initial = null)
+    val trailerUrl by remember(movieDetails) {
+        if (movieDetails != null && movieDetails.Title.isNotBlank()) {
+            viewModel.getTrailerForMovie(imdbId, movieDetails.Title, movieDetails.Year)
+        } else {
+            emptyFlow()
+        }
+    }.collectAsState(initial = null)
+
     val videoId = trailerUrl?.let { YoutubeUtils.extractVideoId(it) }
 
     Surface(

@@ -63,19 +63,18 @@ import com.example.movieslistapp.utils.SortOption
 import com.example.movieslistapp.utils.SortOrder
 import com.example.movieslistapp.utils.Utils.getFilterDisplayName
 import com.example.movieslistapp.utils.sortMovies
-import org.koin.androidx.compose.koinViewModel
 
 
 @Composable
 fun MoviesListScreen(
-    viewModel: MoviesViewModel = koinViewModel(),
+    viewModel: MoviesViewModel,
     onMovieClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
     val state = viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    var query by remember { mutableStateOf("") }
+    val query by viewModel.movieQuery.collectAsStateWithLifecycle()
 
     var filterDropDownExpanded by remember { mutableStateOf(false) }
     var sortBy by remember { mutableStateOf<SortOption>(SortOption.NONE) }
@@ -89,15 +88,12 @@ fun MoviesListScreen(
 
     // Add this LaunchedEffect to load carousel data
     LaunchedEffect(Unit) {
-        isCarouselLoading = true
-        viewModel.loadCarouselData()
-        isCarouselLoading = false
-    }
-    LaunchedEffect(query) {
-        if (query.length > 2) {
-            viewModel.getSearchMovieResult(query.trim())
+        if (carouselGenres.isEmpty()) {
+            isCarouselLoading = true
+            viewModel.loadCarouselData()
+            isCarouselLoading = false
         } else {
-            viewModel.getSearchMovieResult("")
+            isCarouselLoading = false
         }
     }
 
@@ -130,11 +126,11 @@ fun MoviesListScreen(
                         OutlinedTextField(
                             modifier = Modifier.fillMaxWidth(),
                             value = query,
-                            onValueChange = { query = it },
+                            onValueChange = { viewModel.updateSearchQuery(it) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             trailingIcon = {
                                 if (query.isNotEmpty()) {
-                                    IconButton(onClick = { query = "" }) {
+                                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
                                         Icon(Icons.Default.Clear, contentDescription = "Clear")
                                     }
                                 }
@@ -376,7 +372,7 @@ fun MoviesListScreen(
 
     PaginationHelper(
         listState = listState,
-        onLoadMore = { viewModel.getSearchMovieResult(viewModel.movieQuery) }
+        onLoadMore = { viewModel.getSearchMovieResult(query) }
     )
 
 }

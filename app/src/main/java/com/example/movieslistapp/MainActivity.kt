@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -18,6 +20,7 @@ import com.example.movieslistapp.ui.screen.MovieDetailsScreen
 import com.example.movieslistapp.ui.screen.MoviesListScreen
 import com.example.movieslistapp.ui.screen.Screen
 import com.example.movieslistapp.ui.theme.MoviesListAppTheme
+import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
@@ -27,6 +30,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MoviesListAppTheme {
                 val navController = rememberNavController()
+                val viewModel: MoviesViewModel = koinViewModel()
                 
                 Scaffold(modifier = Modifier.fillMaxSize().background(
                     Brush.verticalGradient(
@@ -46,6 +50,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable(Screen.MoviesList.route) {
                             MoviesListScreen(
+                                viewModel = viewModel,
                                 onMovieClick = { imdbId ->
                                     navController.navigate(Screen.MovieDetails.createRoute(imdbId))
                                 }
@@ -56,7 +61,7 @@ class MainActivity : ComponentActivity() {
                             MovieDetailsScreen(
                                 imdbId = imdbId,
                                 onBackPressed = { navController.popBackStack() },
-                                viewModel = koinViewModel()
+                                viewModel = viewModel
                             )
                         }
                     }
