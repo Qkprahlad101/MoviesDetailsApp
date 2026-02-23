@@ -32,11 +32,11 @@ class MoviesViewModel(
     private var currentPage = 1
     private var isEndReached = false
     private var isSearchInProgress = false
+    private var lastSearchedQuery: String = ""
 
     private val _movieQuery = MutableStateFlow("")
     val movieQuery: StateFlow<String> = _movieQuery.asStateFlow()
 
-    // Add these new state variables
     private val _carouselGenres = MutableStateFlow<List<String>>(emptyList())
     val carouselGenres: StateFlow<List<String>> = _carouselGenres.asStateFlow()
 
@@ -96,7 +96,9 @@ class MoviesViewModel(
 
                 val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
                 genres.forEach { genre ->
-                    moviesByGenre[genre] = getMoviesRepository.getTopRatedMoviesByGenre(genre).filter { it.Poster.isNotEmpty() } // Show movies in carousel with posters only
+                    // OMDB returns "N/A" for missing posters, so we filter those out as well.
+                    moviesByGenre[genre] = getMoviesRepository.getTopRatedMoviesByGenre(genre)
+                        .filter { it.Poster.isNotBlank() && it.Poster != "N/A" }
                 }
                 _carouselMovies.value = moviesByGenre
             } catch (e: Exception) {
@@ -127,11 +129,15 @@ class MoviesViewModel(
 
         if (query.isBlank()) {
             _uiState.update { it.copy(movies = emptyList(), isLoading = false) }
+            lastSearchedQuery = ""
+            currentPage = 1
+            isEndReached = false
             return
         }
 
-        if (query != _movieQuery.value) {
-            _movieQuery.value = query
+        // If the query is different from the last actual search, reset pagination.
+        if (query != lastSearchedQuery) {
+            lastSearchedQuery = query
             currentPage = 1
             isEndReached = false
             _uiState.update { it.copy(movies = emptyList()) }

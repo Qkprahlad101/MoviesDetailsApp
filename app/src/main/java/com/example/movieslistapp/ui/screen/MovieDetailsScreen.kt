@@ -57,7 +57,7 @@ fun MovieDetailsScreen(
     val movieDetails = state.movieDetails
     val trailerUrl by remember(movieDetails) {
         if (movieDetails != null && movieDetails.Title.isNotBlank()) {
-            viewModel.getTrailerForMovie(imdbId, movieDetails.Title, movieDetails.Year)
+            viewModel.getTrailerForMovie(imdbId, movieDetails.Title, movieDetails.Year) ?: emptyFlow()
         } else {
             emptyFlow()
         }
@@ -129,7 +129,7 @@ fun MovieDetailsScreen(
                                 .background(Color.Black.copy(alpha = 0.4f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (trailerUrl == null) {
+                            if (!trailerUrl.isNullOrEmpty()) {
                                 CircularProgressIndicator(color = Color.White)
                             } else {
                                 Text("No Trailer Available", color = Color.White)
