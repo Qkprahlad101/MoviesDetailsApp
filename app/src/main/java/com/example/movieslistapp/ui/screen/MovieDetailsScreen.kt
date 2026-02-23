@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,12 +44,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.SubcomposeAsyncImage
@@ -68,13 +70,23 @@ fun MovieDetailsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    
     val screenHeight = configuration.screenHeightDp.dp
-    val headerHeight = screenHeight * 0.4f
+    val maxHeaderHeight = screenHeight * 0.4f
+    val minHeaderHeight = 64.dp + 48.dp // Toolbar height + some padding/status bar
+    
+    val maxHeaderHeightPx = with(density) { maxHeaderHeight.toPx() }
+    val minHeaderHeightPx = with(density) { minHeaderHeight.toPx() }
+    val scrollDistancePx = maxHeaderHeightPx - minHeaderHeightPx
+    
+    // Calculate progress (0.0 at expanded, 1.0 at collapsed)
+    val collapseProgress = (scrollState.value.toFloat() / scrollDistancePx).coerceIn(0f, 1f)
     
     var isTrailerPlaying by remember { mutableStateOf(false) }
     var isPosterExpanded by remember { mutableStateOf(false) }
 
-    // Navigation Handling: Intercept back press if poster is expanded
+    // Navigation Handling
     BackHandler {
         if (isPosterExpanded) {
             isPosterExpanded = false
@@ -124,14 +136,14 @@ fun MovieDetailsScreen(
         }
         
         movieDetails?.let { details ->
-            // Main Content
+            // Main Scrollable Content
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                // Spacer for the collapsible header
-                Spacer(modifier = Modifier.height(headerHeight))
+                // Spacer that matches the header's expanded height
+                Spacer(modifier = Modifier.height(maxHeaderHeight))
 
                 Column(
                     modifier = Modifier
@@ -249,112 +261,138 @@ fun MovieDetailsScreen(
                 }
             }
 
-            // Collapsible Header Overlay
+            // Collapsible Header Toolbar
+            val currentHeaderHeight = maxHeaderHeight - (scrollState.value.dp).coerceAtMost(maxHeaderHeight - minHeaderHeight)
+            
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(headerHeight)
-                    .offset { IntOffset(0, -scrollState.value) }
+                    .height(currentHeaderHeight)
                     .background(Color.Black)
             ) {
-                if (isTrailerPlaying && videoId != null) {
-                    TrailerPlayer(
-                        youtubeVideoId = videoId,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    // YouTube Thumbnail Background
-                    if (videoId != null) {
-                        SubcomposeAsyncImage(
-                            model = "https://img.youtube.com/vi/$videoId/hqdefault.jpg",
-                            contentDescription = "Trailer Thumbnail",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable { isTrailerPlaying = true },
-                            contentScale = ContentScale.Crop,
-                            loading = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) } }
+                // Background Video/Thumbnail (Fades out as we collapse)
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(1f - (collapseProgress * 1.5f).coerceIn(0f, 1f))
+                ) {
+                    if (isTrailerPlaying && videoId != null) {
+                        TrailerPlayer(
+                            youtubeVideoId = videoId,
+                            modifier = Modifier.fillMaxSize()
                         )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
-                                        startY = 0f
+                    } else {
+                        if (videoId != null) {
+                            SubcomposeAsyncImage(
+                                model = "https://img.youtube.com/vi/$videoId/hqdefault.jpg",
+                                contentDescription = "Trailer Thumbnail",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable { isTrailerPlaying = true },
+                                contentScale = ContentScale.Crop,
+                                loading = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) } }
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                                            startY = 0f
+                                        )
                                     )
-                                )
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable { isTrailerPlaying = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(50),
-                                color = Color.Red,
-                                modifier = Modifier.size(64.dp)
+                            )
+                            // Play Button
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable { isTrailerPlaying = true },
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = "Play Trailer",
-                                    tint = Color.White,
-                                    modifier = Modifier.padding(12.dp).fillMaxSize()
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(50),
+                                    color = Color.Red,
+                                    modifier = Modifier.size(64.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Play Trailer",
+                                        tint = Color.White,
+                                        modifier = Modifier.padding(12.dp).fillMaxSize()
+                                    )
+                                }
+                            }
+                        } else {
+                            SubcomposeAsyncImage(
+                                model = details.Poster,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().clickable { isPosterExpanded = true },
+                                contentScale = ContentScale.Crop
+                            )
+                            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
+                                Text("Trailer Not Available", color = Color.White)
                             }
                         }
-                    } else {
-                        SubcomposeAsyncImage(
-                            model = details.Poster,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize().clickable { isPosterExpanded = true },
-                            contentScale = ContentScale.Crop
-                        )
-                        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
-                            Text("Trailer Not Available", color = Color.White)
+
+                        // Small Poster at Bottom Left
+                        Card(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .width(100.dp)
+                                .height(140.dp)
+                                .align(Alignment.BottomStart)
+                                .clickable { isPosterExpanded = true },
+                            elevation = CardDefaults.cardElevation(8.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            SubcomposeAsyncImage(
+                                model = details.Poster,
+                                contentDescription = "Poster",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                loading = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+                            )
                         }
                     }
-
-                    // Small Poster at Bottom Left - Click to Expand
-                    Card(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .width(100.dp)
-                            .height(140.dp)
-                            .align(Alignment.BottomStart)
-                            .clickable { isPosterExpanded = true },
-                        elevation = CardDefaults.cardElevation(8.dp),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        SubcomposeAsyncImage(
-                            model = details.Poster,
-                            contentDescription = "Poster",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            loading = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
-                        )
-                    }
                 }
-            }
-        }
-        
-        // Navigation Bar (Fixed at top)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, start = 8.dp)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = Color.Black.copy(alpha = 0.5f),
-                modifier = Modifier.size(40.dp)
-            ) {
-                IconButton(onClick = onBackPressed) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White
+
+                // Collapsed Title (Fades in as we collapse)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(horizontal = 56.dp)
+                        .alpha((collapseProgress - 0.5f).coerceIn(0f, 1f) * 2f),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = details.Title,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.Bold
                     )
+                }
+
+                // Fixed Back Button on Top
+                Box(
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(start = 8.dp, top = 8.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color.Black.copy(alpha = 0.5f),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        IconButton(onClick = onBackPressed) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -380,10 +418,10 @@ fun MovieDetailsScreen(
                     loading = { CircularProgressIndicator(color = Color.White) }
                 )
                 
-                // Close button for the full screen view
                 IconButton(
                     onClick = { isPosterExpanded = false },
                     modifier = Modifier
+                        .statusBarsPadding()
                         .align(Alignment.TopEnd)
                         .padding(16.dp)
                         .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50))

@@ -221,10 +221,6 @@ fun MoviesListScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            Spacer(modifier = Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .background(Color.LightGray))
             if (state.value.movies.isEmpty() && !state.value.isLoading && query.isEmpty()) {
                 if (isCarouselLoading) {
                     // Show shimmer loading state
