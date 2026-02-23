@@ -49,7 +49,7 @@ fun TrailerPlayer(
             
             val listener = object : AbstractYouTubePlayerListener() {
                 override fun onReady(youTubePlayer: YouTubePlayer) {
-                    youTubePlayer.loadVideo(youtubeVideoId, 0f)
+                    youTubePlayer.cueVideo(youtubeVideoId, 0f)
                 }
             }
             
@@ -122,7 +122,7 @@ fun TrailerPlayer(
     DisposableEffect(youtubeVideoId) {
         youtubePlayerView.getYouTubePlayerWhenReady(object : com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.YouTubePlayerCallback {
             override fun onYouTubePlayer(youTubePlayer: YouTubePlayer) {
-                youTubePlayer.loadVideo(youtubeVideoId, 0f)
+                youTubePlayer.cueVideo(youtubeVideoId, 0f)
             }
         })
 
