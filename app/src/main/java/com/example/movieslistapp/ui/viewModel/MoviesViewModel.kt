@@ -1,5 +1,6 @@
 package com.example.movieslistapp.ui.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.movieslistapp.BuildConfig.GEMINI_API_KEY
@@ -51,6 +52,10 @@ class MoviesViewModel(
     )
 
     fun getTrailerForMovie(imdbId: String, movieTitle: String, year: String? = null): Flow<String?> = flow {
+        if (movieTitle.isBlank()) {
+            emit(null)
+            return@flow
+        }
         // 1. Check DB first
         val cachedTrailer = getMoviesRepository.getTrailerUrlFromDb(imdbId)
         if (cachedTrailer != null) {
@@ -100,7 +105,11 @@ class MoviesViewModel(
             try {
                 val movieDetails = getMoviesRepository.getMovieDetails(imdbId)
                 movieDetails.let {
-                    _uiState.update { it.copy(isLoading = false, movieDetails = movieDetails) }
+                    if (!it.Title.isEmpty()) {
+                        _uiState.update { it.copy(isLoading = false, movieDetails = movieDetails) }
+                    } else {
+                        _uiState.update { it.copy(error = "Movie Title is Empty!", isLoading = false) }
+                    }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
