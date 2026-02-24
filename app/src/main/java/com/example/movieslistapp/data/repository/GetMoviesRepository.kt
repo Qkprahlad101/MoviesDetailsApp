@@ -96,8 +96,8 @@ class GetMoviesRepository(
         }
     }
 
-    suspend fun getRecentlySearchedMovies() : List<MovieDetails> {
-        return movieDao.getRecentlySearchedMovies().map { it.toMovieDetails() }
+    suspend fun getRecentlyAddedMovies() : List<MovieDetails> {
+        return movieDao.getRecentlyAddedMovies().map { it.toMovieDetails() }
     }
 
     suspend fun getAllGenres(): List<String> {
@@ -137,29 +137,18 @@ class GetMoviesRepository(
                 null
             }
 
-            if (searchResponse == null || searchResponse.Response == "False") {
-                // Fallback to whatever is in DB
-                return movieDao.getTopRatedMoviesByGenre(normalizedGenre).map { it.toMovieDetails() }
-            }
-
-            // Step 3: Fetch full details for a subset to get ratings/genres for DB
-            val movies = searchResponse.Search?.take(8) ?: emptyList()
-            val movieDetailsList = mutableListOf<MovieDetails>()
-            
-            for (movie in movies) {
+            if (searchResponse != null) {
                 try {
-                    // Use helper that checks cache/DB before making API call
-                    val details = getMovieDetails(movie.imdbID)
-                    movieDetailsList.add(details)
+                    searchResponse.Search?.let { movies ->
+                        movieDao.insertMovies(movies.map { it.toMovieEntity(normalizedGenre) })
+                        enforceDatabaseLimits()
+                    }
                 } catch (e: Exception) {
-                    // Log and continue - don't let one movie detail failure stop the whole genre
-                    Log.e(TAG, "Error fetching details for movie ${movie.imdbID} in genre $normalizedGenre", e)
+                    Log.e(TAG, "Failed to get movies by genre $normalizedGenre", e)
                 }
             }
             
-            return movieDetailsList.ifEmpty {
-                movieDao.getTopRatedMoviesByGenre(normalizedGenre).map { it.toMovieDetails() }
-            }
+            return movieDao.getTopRatedMoviesByGenre(normalizedGenre).map { it.toMovieDetails() }
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error in getMoviesByGenre for $normalizedGenre", e)
             return movieDao.getTopRatedMoviesByGenre(normalizedGenre).map { it.toMovieDetails() }

@@ -102,14 +102,18 @@ class MoviesViewModel(
     fun loadCarouselData(forceRefresh: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true) }
-            val selectedGenres = listOf(MovieGenre.RECENTLY_VIEWED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
+            val selectedGenres = listOf(MovieGenre.RECENTLY_ADDED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
                 MovieGenre.DRAMA, MovieGenre.HORROR, MovieGenre.MUSICAL, MovieGenre.THRILLER,
                 )
             _carouselGenres.value = selectedGenres.map { it.displayName }
 
             val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
-            moviesByGenre[MovieGenre.RECENTLY_VIEWED.displayName] = getMoviesRepository.getRecentlySearchedMovies() ?: emptyList()
-            selectedGenres.filter { it.name != MovieGenre.RECENTLY_VIEWED.name }.forEach { genre ->
+            moviesByGenre[MovieGenre.RECENTLY_ADDED.displayName] = try {
+                getMoviesRepository.getRecentlyAddedMovies()
+            } catch (e: Exception) {
+                emptyList<MovieDetails>()
+            }
+            selectedGenres.filter { it.name != MovieGenre.RECENTLY_ADDED.name }.forEach { genre ->
                 moviesByGenre[genre.displayName] = getMoviesRepository.getMoviesByGenre(genre.name, forceRefresh)
             }
             _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
