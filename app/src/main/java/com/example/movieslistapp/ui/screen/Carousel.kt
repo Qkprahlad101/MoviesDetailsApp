@@ -18,8 +18,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,20 +102,28 @@ fun CarouselMovieItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarouselSection(
     carouselGenres: List<String>,
     carouselMovies: Map<String, List<MovieDetails>>,
-    onMovieClick: (MovieDetails) -> Unit
+    onMovieClick: (MovieDetails) -> Unit,
+    onPullToRefresh: () -> Unit,
+    isRefreshing: Boolean
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onPullToRefresh
     ) {
-        items(carouselGenres) { genre ->
-            carouselMovies[genre]?.let { movies ->
-                if (movies.isNotEmpty()) {
-                    CategoryCarouselSection(genre, movies, onMovieClick)
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(carouselGenres) { genre ->
+                carouselMovies[genre]?.let { movies ->
+                    if (movies.isNotEmpty()) {
+                        CategoryCarouselSection(genre, movies, onMovieClick)
+                    }
                 }
             }
         }

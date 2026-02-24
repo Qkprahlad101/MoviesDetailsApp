@@ -7,6 +7,10 @@ import com.example.movieslistapp.BuildConfig.YOUTUBE_DATAV3_API_KEY
 import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.data.repository.GetMoviesRepository
 import com.example.movieslistapp.ui.UiState
+import com.example.aitrailersdk.TrailerAi
+import com.example.aitrailersdk.core.config.TrailerAiConfig
+import com.example.aitrailersdk.core.model.TrailerRequest
+import com.example.movieslistapp.utils.MovieGenre
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,9 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.example.aitrailersdk.TrailerAi
-import com.example.aitrailersdk.core.config.TrailerAiConfig
-import com.example.aitrailersdk.core.model.TrailerRequest
 
 class MoviesViewModel(
     private val getMoviesRepository: GetMoviesRepository
@@ -32,15 +33,19 @@ class MoviesViewModel(
     private var currentPage = 1
     private var isEndReached = false
     private var isSearchInProgress = false
+    private var lastSearchedQuery: String = ""
 
-    var movieQuery : String = ""
+    private val _movieQuery = MutableStateFlow("")
+    val movieQuery: StateFlow<String> = _movieQuery.asStateFlow()
 
-    // Add these new state variables
     private val _carouselGenres = MutableStateFlow<List<String>>(emptyList())
     val carouselGenres: StateFlow<List<String>> = _carouselGenres.asStateFlow()
 
     private val _carouselMovies = MutableStateFlow<Map<String, List<MovieDetails>>>(emptyMap())
     val carouselMovies: StateFlow<Map<String, List<MovieDetails>>> = _carouselMovies.asStateFlow()
+    private var isFirstLoad = true
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     private val trailerAi = TrailerAi.initialize(
         TrailerAiConfig(
@@ -50,7 +55,28 @@ class MoviesViewModel(
         )
     )
 
-    fun getTrailerForMovie(imdbId: String, movieTitle: String, year: String? = null): Flow<String?> = flow {
+    fun updateSearchQuery(query: String) {
+        _movieQuery.value = query
+        getSearchMovieResult(query)
+    }
+
+    fun refreshCarousel() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            loadCarouselData(forceRefresh = true)
+            _isRefreshing.value = false
+        }
+    }
+
+    fun getTrailerForMovie(
+        imdbId: String,
+        movieTitle: String,
+        year: String? = null
+    ): Flow<String?> = flow {
+        if (movieTitle.isBlank()) {
+            emit(null)
+            return@flow
+        }
         // 1. Check DB first
         val cachedTrailer = getMoviesRepository.getTrailerUrlFromDb(imdbId)
         if (cachedTrailer != null) {
@@ -78,22 +104,33 @@ class MoviesViewModel(
         emit(trailerUrl)
     }
 
-    fun loadCarouselData() {
+    fun loadCarouselData(forceRefresh: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val genres = getMoviesRepository.getAllGenres()
-                _carouselGenres.value = genres
+            _uiState.update { it.copy(isLoading = true) }
+            val selectedGenres = listOf(
+                MovieGenre.RECENTLY_ADDED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
+                MovieGenre.DRAMA, MovieGenre.HORROR, MovieGenre.MUSICAL, MovieGenre.THRILLER,
+            )
+            _carouselGenres.value = selectedGenres.map { it.displayName }
 
-                val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
-                genres.forEach { genre ->
-                    moviesByGenre[genre] = getMoviesRepository.getTopRatedMoviesByGenre(genre)
-                }
-                _carouselMovies.value = moviesByGenre
+            val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
+            moviesByGenre[MovieGenre.RECENTLY_ADDED.displayName] = try {
+                getMoviesRepository.getRecentlyAddedMovies()
             } catch (e: Exception) {
-                // Handle error
+                emptyList<MovieDetails>()
             }
+            selectedGenres.filter { it.name != MovieGenre.RECENTLY_ADDED.name }.forEach { genre ->
+                moviesByGenre[genre.displayName] = try {
+                    getMoviesRepository.getMoviesByGenre(genre.name, forceRefresh)
+                } catch (e: Exception) {
+                    emptyList<MovieDetails>()
+                }
+            }
+            _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
+            _uiState.update { it.copy(isLoading = false) }
         }
     }
+
     fun getMovieDetails(imdbId: String) {
         _uiState.update { it.copy(isLoading = true, movieDetails = null) } // Clear previous details
         viewModelScope.launch(Dispatchers.IO) {
@@ -111,17 +148,21 @@ class MoviesViewModel(
         }
     }
 
-    private var searchJob : Job? = null
+    private var searchJob: Job? = null
     fun getSearchMovieResult(query: String) {
         searchJob?.cancel()
 
         if (query.isBlank()) {
             _uiState.update { it.copy(movies = emptyList(), isLoading = false) }
+            lastSearchedQuery = ""
+            currentPage = 1
+            isEndReached = false
             return
         }
 
-        if (query != movieQuery) {
-            movieQuery = query
+        // If the query is different from the last actual search, reset pagination.
+        if (query != lastSearchedQuery) {
+            lastSearchedQuery = query
             currentPage = 1
             isEndReached = false
             _uiState.update { it.copy(movies = emptyList()) }

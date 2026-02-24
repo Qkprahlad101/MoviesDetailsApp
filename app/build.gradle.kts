@@ -92,6 +92,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
 
+// 🔹 Navigation + Compose
+    implementation(libs.androidx.navigation.compose)
+
 // 🔹 Kotlin Coroutines (for pagination)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
@@ -121,7 +124,7 @@ dependencies {
     implementation("com.valentinilk.shimmer:compose-shimmer:1.3.0")
 
     // Add TrailerAI SDK
-    implementation("com.example.aitrailersdk:trailerai-core:2.0.5")
+    implementation("com.example.aitrailersdk:trailerai-core:2.1.0")
 
     implementation(project(":trailer-player"))
 
