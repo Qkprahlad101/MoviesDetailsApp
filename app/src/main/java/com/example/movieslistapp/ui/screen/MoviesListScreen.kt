@@ -82,6 +82,7 @@ fun MoviesListScreen(
 
     val carouselGenres by viewModel.carouselGenres.collectAsStateWithLifecycle()
     val carouselMovies by viewModel.carouselMovies.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
 
     var isCarouselLoading by remember { mutableStateOf(true)}
@@ -90,7 +91,7 @@ fun MoviesListScreen(
     LaunchedEffect(Unit) {
         if (carouselGenres.isEmpty()) {
             isCarouselLoading = true
-            viewModel.loadCarouselData()
+            viewModel.loadCarouselData(true)
             isCarouselLoading = false
         } else {
             isCarouselLoading = false
@@ -264,7 +265,9 @@ fun MoviesListScreen(
                         carouselMovies = carouselMovies,
                         onMovieClick = { movieDetails ->
                             onMovieClick(movieDetails.imdbID)
-                        }
+                        },
+                        onPullToRefresh = {viewModel.refreshCarousel() },
+                        isRefreshing = isRefreshing
                     )
                 } else {
                     // Show empty state

@@ -1,8 +1,8 @@
 package com.example.movieslistapp.data.repository
 
+import android.util.Log
 import androidx.collection.LruCache
 import com.example.movieslistapp.data.ApiService
-import com.example.movieslistapp.data.model.Movie
 import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.data.model.MovieResponse
 import com.example.movieslistapp.db.dao.MovieDao
@@ -10,6 +10,7 @@ import com.example.movieslistapp.domain.mapper.toMovie
 import com.example.movieslistapp.domain.mapper.toMovieDetails
 import com.example.movieslistapp.domain.mapper.toMovieDetailsEntity
 import com.example.movieslistapp.domain.mapper.toMovieEntity
+import com.example.movieslistapp.utils.MovieGenre
 
 class GetMoviesRepository(
     private val apiService: ApiService,
@@ -20,6 +21,7 @@ class GetMoviesRepository(
         private const val MAX_DB_MOVIES = 200
         private const val MAX_DB_MOVIE_DETAILS = 200
         private const val PAGE_SIZE = 10
+        private const val TAG = "GetMoviesRepository"
     }
 
     private val movieDetailsCache = LruCache<String, MovieDetails>(50)
@@ -41,7 +43,7 @@ class GetMoviesRepository(
     suspend fun getMoviesListFromSearch(query: String, currentPage: Int): MovieResponse {
         val cacheKey = "$query:$currentPage"
         //check in cache
-        moviesListCache.get(cacheKey)?.let {
+        moviesListCache[cacheKey]?.let {
             return it
         }
 
@@ -74,7 +76,7 @@ class GetMoviesRepository(
 
     suspend fun getMovieDetails(imdbId: String): MovieDetails {
         //first check in cache and return it
-        movieDetailsCache.get(imdbId)?.let {
+        movieDetailsCache[imdbId]?.let {
             return it
         }
 
@@ -94,6 +96,10 @@ class GetMoviesRepository(
         }
     }
 
+    suspend fun getRecentlySearchedMovies() : List<MovieDetails> {
+        return movieDao.getRecentlySearchedMovies().map { it.toMovieDetails() }
+    }
+
     suspend fun getAllGenres(): List<String> {
         return movieDao.getAllGenres()
     }
@@ -109,6 +115,55 @@ class GetMoviesRepository(
     suspend fun getTrailerUrlFromDb(imdbId: String): String? {
         // Check movie_details table first as it's more likely to have detailed info
         return movieDao.getMovieDetailsTrailer(imdbId) ?: movieDao.getMovieTrailer(imdbId)
+    }
+
+    suspend fun getMoviesByGenre(genreName: String, forceRefresh: Boolean = false): List<MovieDetails> {
+        val normalizedGenre = MovieGenre.fromString(genreName)?.displayName ?: genreName
+        
+        try {
+            // Step 1: Check local database first if not forcing refresh
+            if (!forceRefresh) {
+                val cachedMovies = movieDao.getTopRatedMoviesByGenre(normalizedGenre)
+                if (cachedMovies.isNotEmpty()) {
+                    return cachedMovies.map { it.toMovieDetails() }
+                }
+            }
+
+            // Step 2: Fetch from search API
+            val searchResponse = try {
+                apiService.searchMoviesForSpecifiGenre(normalizedGenre)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to search movies for genre $normalizedGenre", e)
+                null
+            }
+
+            if (searchResponse == null || searchResponse.Response == "False") {
+                // Fallback to whatever is in DB
+                return movieDao.getTopRatedMoviesByGenre(normalizedGenre).map { it.toMovieDetails() }
+            }
+
+            // Step 3: Fetch full details for a subset to get ratings/genres for DB
+            val movies = searchResponse.Search?.take(8) ?: emptyList()
+            val movieDetailsList = mutableListOf<MovieDetails>()
+            
+            for (movie in movies) {
+                try {
+                    // Use helper that checks cache/DB before making API call
+                    val details = getMovieDetails(movie.imdbID)
+                    movieDetailsList.add(details)
+                } catch (e: Exception) {
+                    // Log and continue - don't let one movie detail failure stop the whole genre
+                    Log.e(TAG, "Error fetching details for movie ${movie.imdbID} in genre $normalizedGenre", e)
+                }
+            }
+            
+            return movieDetailsList.ifEmpty {
+                movieDao.getTopRatedMoviesByGenre(normalizedGenre).map { it.toMovieDetails() }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error in getMoviesByGenre for $normalizedGenre", e)
+            return movieDao.getTopRatedMoviesByGenre(normalizedGenre).map { it.toMovieDetails() }
+        }
     }
 
     suspend fun updateTrailerUrl(imdbId: String, trailerUrl: String) {

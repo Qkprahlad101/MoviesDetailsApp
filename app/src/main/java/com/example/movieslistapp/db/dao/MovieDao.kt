@@ -65,4 +65,8 @@ interface MovieDao {
 
     @Query("SELECT trailer FROM movie_details WHERE imdbID = :imdbId")
     suspend fun getMovieDetailsTrailer(imdbId: String): String?
+
+    @Query("SELECT * FROM movie_details ORDER BY timestamp DESC LIMIT 10")
+    fun getRecentlySearchedMovies(): List<MovieDetailsEntity>
+
 }

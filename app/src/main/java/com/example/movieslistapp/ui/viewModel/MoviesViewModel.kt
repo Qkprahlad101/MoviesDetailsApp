@@ -1,6 +1,5 @@
 package com.example.movieslistapp.ui.viewModel
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.movieslistapp.BuildConfig.GEMINI_API_KEY
@@ -11,6 +10,7 @@ import com.example.movieslistapp.ui.UiState
 import com.example.aitrailersdk.TrailerAi
 import com.example.aitrailersdk.core.config.TrailerAiConfig
 import com.example.aitrailersdk.core.model.TrailerRequest
+import com.example.movieslistapp.utils.MovieGenre
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,6 +43,9 @@ class MoviesViewModel(
 
     private val _carouselMovies = MutableStateFlow<Map<String, List<MovieDetails>>>(emptyMap())
     val carouselMovies: StateFlow<Map<String, List<MovieDetails>>> = _carouselMovies.asStateFlow()
+    private var isFirstLoad = true
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     private val trailerAi = TrailerAi.initialize(
         TrailerAiConfig(
@@ -57,6 +60,13 @@ class MoviesViewModel(
         getSearchMovieResult(query)
     }
 
+    fun refreshCarousel() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            loadCarouselData(forceRefresh = true)
+            _isRefreshing.value = false
+        }
+    }
     fun getTrailerForMovie(imdbId: String, movieTitle: String, year: String? = null): Flow<String?> = flow {
         if (movieTitle.isBlank()) {
             emit(null)
@@ -89,26 +99,19 @@ class MoviesViewModel(
         emit(trailerUrl)
     }
 
-    fun loadCarouselData() {
+    fun loadCarouselData(forceRefresh: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val genres = getMoviesRepository.getAllGenres()
-                _carouselGenres.value = genres
+            val selectedGenres = listOf(MovieGenre.RECENTLY_VIEWED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
+                MovieGenre.DRAMA, MovieGenre.HORROR, MovieGenre.MUSICAL, MovieGenre.THRILLER,
+                )
+            _carouselGenres.value = selectedGenres.map { it.displayName }
 
-                val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
-                genres.forEach { genre ->
-                    // OMDB returns "N/A" for missing posters. We also validate that the Poster field contains a valid URL pattern.
-                    moviesByGenre[genre] = getMoviesRepository.getTopRatedMoviesByGenre(genre)
-                        .filter { movie ->
-                            movie.Poster.isNotBlank() &&
-                            movie.Poster != "N/A" &&
-                            Patterns.WEB_URL.matcher(movie.Poster).matches()
-                        }
-                }
-                _carouselMovies.value = moviesByGenre
-            } catch (e: Exception) {
-                // Handle error
+            val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
+            moviesByGenre[MovieGenre.RECENTLY_VIEWED.displayName] = getMoviesRepository.getRecentlySearchedMovies() ?: emptyList()
+            selectedGenres.filter { it.name != MovieGenre.RECENTLY_VIEWED.name }.forEach { genre ->
+                moviesByGenre[genre.displayName] = getMoviesRepository.getMoviesByGenre(genre.name, forceRefresh)
             }
+            _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
         }
     }
     fun getMovieDetails(imdbId: String) {
