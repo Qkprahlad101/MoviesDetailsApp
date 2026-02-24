@@ -67,7 +67,12 @@ class MoviesViewModel(
             _isRefreshing.value = false
         }
     }
-    fun getTrailerForMovie(imdbId: String, movieTitle: String, year: String? = null): Flow<String?> = flow {
+
+    fun getTrailerForMovie(
+        imdbId: String,
+        movieTitle: String,
+        year: String? = null
+    ): Flow<String?> = flow {
         if (movieTitle.isBlank()) {
             emit(null)
             return@flow
@@ -102,9 +107,10 @@ class MoviesViewModel(
     fun loadCarouselData(forceRefresh: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true) }
-            val selectedGenres = listOf(MovieGenre.RECENTLY_ADDED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
+            val selectedGenres = listOf(
+                MovieGenre.RECENTLY_ADDED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
                 MovieGenre.DRAMA, MovieGenre.HORROR, MovieGenre.MUSICAL, MovieGenre.THRILLER,
-                )
+            )
             _carouselGenres.value = selectedGenres.map { it.displayName }
 
             val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
@@ -114,12 +120,17 @@ class MoviesViewModel(
                 emptyList<MovieDetails>()
             }
             selectedGenres.filter { it.name != MovieGenre.RECENTLY_ADDED.name }.forEach { genre ->
-                moviesByGenre[genre.displayName] = getMoviesRepository.getMoviesByGenre(genre.name, forceRefresh)
+                moviesByGenre[genre.displayName] = try {
+                    getMoviesRepository.getMoviesByGenre(genre.name, forceRefresh)
+                } catch (e: Exception) {
+                    emptyList<MovieDetails>()
+                }
             }
             _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
             _uiState.update { it.copy(isLoading = false) }
         }
     }
+
     fun getMovieDetails(imdbId: String) {
         _uiState.update { it.copy(isLoading = true, movieDetails = null) } // Clear previous details
         viewModelScope.launch(Dispatchers.IO) {
@@ -137,7 +148,7 @@ class MoviesViewModel(
         }
     }
 
-    private var searchJob : Job? = null
+    private var searchJob: Job? = null
     fun getSearchMovieResult(query: String) {
         searchJob?.cancel()
 
