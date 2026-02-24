@@ -40,7 +40,7 @@ class GetMoviesRepository(
         }
     }
 
-    suspend fun getMoviesListFromSearch(query: String, currentPage: Int): MovieResponse {
+    suspend fun getMoviesListFromSearch(query: String, currentPage: Int, year: String? = null): MovieResponse {
         val cacheKey = "$query:$currentPage"
         //check in cache
         moviesListCache[cacheKey]?.let {
@@ -62,7 +62,7 @@ class GetMoviesRepository(
             return response
         } else {
             //api call
-            val response = apiService.getMoviesListFromSearch(query, currentPage)
+            val response = apiService.getMoviesListFromSearch(query, currentPage, year)
             response.Search?.let { movies ->
                 movieDao.insertMovies(movies.filter { it.Poster != "N/A" && it.Poster.isNotEmpty()
                         && it.Title != "N/A" && it.Title.isNotEmpty() && it.Year != "N/A" && it.Year.isNotEmpty() }
@@ -97,7 +97,21 @@ class GetMoviesRepository(
     }
 
     suspend fun getRecentlyAddedMovies() : List<MovieDetails> {
+        triggerDataRefresh()
         return movieDao.getRecentlyAddedMovies().map { it.toMovieDetails() }
+    }
+
+    suspend fun triggerDataRefresh() {
+
+        val latestMovies = apiService.getMoviesListFromSearch("movie", 1, "2026").Search
+        latestMovies?.let {
+            movieDao.insertMovies(it.map { it.toMovieEntity("movie") })
+        }
+        enforceDatabaseLimits()
+
+        latestMovies?.forEach { movie ->
+            getMovieDetails(movie.imdbID)
+        }
     }
 
     suspend fun getAllGenres(): List<String> {
@@ -131,7 +145,7 @@ class GetMoviesRepository(
 
             // Step 2: Fetch from search API
             val searchResponse = try {
-                apiService.searchMoviesForSpecifiGenre(normalizedGenre)
+                apiService.getMoviesListFromSearch(normalizedGenre)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to search movies for genre $normalizedGenre", e)
                 null
@@ -139,15 +153,18 @@ class GetMoviesRepository(
 
             if (searchResponse != null) {
                 try {
-                    searchResponse.Search?.let { movies ->
-                        movieDao.insertMovies(movies.map { it.toMovieEntity(normalizedGenre) })
+                    searchResponse.Search?.take(10).let { movies ->
+                        val movieEntities = movies?.map { it.toMovieEntity(normalizedGenre) }
+                        movieDao.insertMovies(movieEntities!!)
+                        movieEntities.forEach {
+                            getMovieDetails(it.imdbId)
+                        }
                         enforceDatabaseLimits()
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to get movies by genre $normalizedGenre", e)
                 }
             }
-            
             return movieDao.getTopRatedMoviesByGenre(normalizedGenre).map { it.toMovieDetails() }
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error in getMoviesByGenre for $normalizedGenre", e)
