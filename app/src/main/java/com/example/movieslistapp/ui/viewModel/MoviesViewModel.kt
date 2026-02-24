@@ -101,6 +101,7 @@ class MoviesViewModel(
 
     fun loadCarouselData(forceRefresh: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isLoading = true) }
             val selectedGenres = listOf(MovieGenre.RECENTLY_VIEWED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
                 MovieGenre.DRAMA, MovieGenre.HORROR, MovieGenre.MUSICAL, MovieGenre.THRILLER,
                 )
@@ -112,6 +113,7 @@ class MoviesViewModel(
                 moviesByGenre[genre.displayName] = getMoviesRepository.getMoviesByGenre(genre.name, forceRefresh)
             }
             _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
+            _uiState.update { it.copy(isLoading = false) }
         }
     }
     fun getMovieDetails(imdbId: String) {
