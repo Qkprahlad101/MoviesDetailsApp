@@ -20,4 +20,12 @@ interface ApiService {
         @Query("i") imdbId: String
     ): MovieDetails
 
+    @GET("/")
+    suspend fun getMoviesByTitle(
+        @Query("t") query: String,  // e.g. "Action", "sci-fi horror", "Marvel superhero"
+        @Query("page") page: Int = 1,
+        @Query("y") year: String? = null,
+        @Query("type") type: String = "movie",
+    ): MovieResponse
+
 }

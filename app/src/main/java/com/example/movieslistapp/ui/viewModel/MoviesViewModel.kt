@@ -1,5 +1,6 @@
 package com.example.movieslistapp.ui.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.movieslistapp.BuildConfig.GEMINI_API_KEY
@@ -9,6 +10,7 @@ import com.example.movieslistapp.data.repository.GetMoviesRepository
 import com.example.movieslistapp.ui.UiState
 import com.example.aitrailersdk.TrailerAi
 import com.example.aitrailersdk.core.config.TrailerAiConfig
+import com.example.aitrailersdk.core.impl.GeminiTrailerService
 import com.example.aitrailersdk.core.model.TrailerRequest
 import com.example.movieslistapp.utils.MovieGenre
 import kotlinx.coroutines.CancellationException
@@ -47,6 +49,9 @@ class MoviesViewModel(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    companion object {
+        private const val TAG = "MoviesViewModel"
+    }
     private val trailerAi = TrailerAi.initialize(
         TrailerAiConfig(
             enableLogging = true,
@@ -54,6 +59,11 @@ class MoviesViewModel(
             youtubeApiKey = YOUTUBE_DATAV3_API_KEY
         )
     )
+
+    private val geminiTrailerService = GeminiTrailerService(TrailerAiConfig(
+        geminiApiKey = GEMINI_API_KEY,
+        enableLogging = true
+    ))
 
     fun updateSearchQuery(query: String) {
         _movieQuery.value = query
@@ -108,7 +118,7 @@ class MoviesViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true) }
             val selectedGenres = listOf(
-                MovieGenre.RECENTLY_ADDED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
+                MovieGenre.AI_SUGGESTIONS,MovieGenre.RECENTLY_ADDED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
                 MovieGenre.DRAMA, MovieGenre.HORROR, MovieGenre.MUSICAL, MovieGenre.THRILLER,
             )
             _carouselGenres.value = selectedGenres.map { it.displayName }
@@ -126,6 +136,18 @@ class MoviesViewModel(
                     emptyList<MovieDetails>()
                 }
             }
+
+            _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
+            _uiState.update { it.copy(isLoading = false) }
+
+            moviesByGenre[MovieGenre.AI_SUGGESTIONS.displayName] = try {
+                getAiSuggestedMovies().also {
+                    Log.d(TAG, "moviesByGenre[MovieGenre.AI_SUGGESTIONS.displayName]: ${it}")
+                }
+            } catch (e: Exception) {
+                emptyList<MovieDetails>()
+            }
+
             _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
             _uiState.update { it.copy(isLoading = false) }
         }
@@ -146,6 +168,27 @@ class MoviesViewModel(
                 isSearchInProgress = false
             }
         }
+    }
+
+    suspend fun getAiSuggestedMovies() :  List<MovieDetails> {
+        val watchedMovieListRequest = getMoviesRepository.getTopRatedMoviesOverall().take(20).map {
+            TrailerRequest(movieTitle = it.Title, year = it.Year, director = it.Director, description = it.Plot, genre = it.Genre)
+        }
+        val movieValidator = getMoviesRepository.getAiMovieValidator()
+        Log.d(TAG, "getAiSuggestedMovies: watchedMovieListRequest: $watchedMovieListRequest")
+        try {
+            val suggestedMovies = geminiTrailerService.suggestRelevantMovies(watchedMovieListRequest, validator = movieValidator)
+            Log.d(TAG, "getAiSuggestedMovies: suggestedMovies: $suggestedMovies")
+            suggestedMovies.map { it.first }.forEach { movie ->
+                getMoviesRepository.getMovieDetails(movie.description.toString().split(":")[1])
+            }
+            return suggestedMovies.map { it.first }.map { movie ->
+                getMoviesRepository.getMovieDetails(movie.description.toString().split(":")[1])
+            }
+        } catch (e: Exception) {
+            return emptyList<MovieDetails>()
+        }
+
     }
 
     private var searchJob: Job? = null

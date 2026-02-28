@@ -74,6 +74,10 @@ class GetMoviesRepository(
         }
     }
 
+    fun getAiMovieValidator(): AiMovieValidator {
+        return AiMovieValidator(apiService)
+    }
+
     suspend fun getMovieDetails(imdbId: String): MovieDetails {
         //first check in cache and return it
         movieDetailsCache[imdbId]?.let {
