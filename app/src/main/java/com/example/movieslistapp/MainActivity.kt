@@ -37,6 +37,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.movieslistapp.ui.screen.MovieDetailsScreen
 import com.example.movieslistapp.ui.screen.MoviesListScreen
 import com.example.movieslistapp.ui.screen.Screen
+import com.example.movieslistapp.ui.screen.SplashScreen
+import com.example.movieslistapp.ui.theme.MoviesListAppTheme
 import com.example.movieslistapp.ui.theme.MoviesListAppTheme
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import com.example.movieslistapp.utils.NetworkObserver
@@ -77,9 +79,16 @@ class MainActivity : ComponentActivity() {
 
                             NavHost(
                                 navController = navController,
-                                startDestination = Screen.MoviesList.route,
+                                startDestination = Screen.Splash.route,
                                 modifier = Modifier.weight(1f)
                             ) {
+                                composable(Screen.Splash.route) {
+                                    SplashScreen(onNavigateToMain = {
+                                        navController.navigate(Screen.MoviesList.route) {
+                                            popUpTo(Screen.Splash.route) { inclusive = true }
+                                        }
+                                    })
+                                }
                                 composable(Screen.MoviesList.route) {
                                     MoviesListScreen(
                                         viewModel = viewModel,
