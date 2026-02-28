@@ -36,7 +36,8 @@ enum class MovieGenre(val displayName: String) {
     ADULT("Adult"),
     SUPERHERO("Superhero"),    // sometimes used instead of Action/Adventure
 
-    RECENTLY_ADDED("Recently Added")
+    RECENTLY_ADDED("Recently Added"),
+    AI_SUGGESTIONS("Suggested for You")
     ;
 
     companion object {
