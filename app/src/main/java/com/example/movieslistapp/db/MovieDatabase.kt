@@ -9,10 +9,11 @@ import com.example.movieslistapp.db.converter.Converters
 import com.example.movieslistapp.db.dao.MovieDao
 import com.example.movieslistapp.db.entity.MovieDetailsEntity
 import com.example.movieslistapp.db.entity.MovieEntity
+import com.example.movieslistapp.db.entity.MovieInteractionEntity
 
 @Database(
-    entities = [MovieEntity::class, MovieDetailsEntity::class],
-    version = 3,
+    entities = [MovieEntity::class, MovieDetailsEntity::class, MovieInteractionEntity::class],
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -37,6 +38,19 @@ abstract class MovieDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE movies ADD COLUMN trailer TEXT")
                 //add trailer column to movie_details table
                 db.execSQL("ALTER TABLE movie_details ADD COLUMN trailer TEXT")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS movie_interactions (
+                        imdbId TEXT NOT NULL, 
+                        openCount INTEGER NOT NULL, 
+                        lastOpenedTimestamp INTEGER NOT NULL, 
+                        PRIMARY KEY(imdbId)
+                    )
+                """.trimIndent())
             }
         }
     }

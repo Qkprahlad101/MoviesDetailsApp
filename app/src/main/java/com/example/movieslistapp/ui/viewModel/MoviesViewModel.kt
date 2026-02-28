@@ -279,4 +279,14 @@ class MoviesViewModel(
             }
         }
     }
+
+    fun incrementOpenCount(imdbId: String) {
+        viewModelScope.launch {
+            try {
+                getMoviesRepository.incrementOpenCount(imdbId)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to increment open count for $imdbId", e)
+            }
+        }
+    }
 }

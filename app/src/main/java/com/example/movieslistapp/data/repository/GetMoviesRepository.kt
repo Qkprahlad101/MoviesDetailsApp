@@ -78,7 +78,12 @@ class GetMoviesRepository(
         return AiMovieValidator(apiService)
     }
 
+    suspend fun incrementOpenCount(imdbId: String) {
+        movieDao.incrementOpenCount(imdbId)
+    }
+
     suspend fun getMovieDetails(imdbId: String): MovieDetails {
+
         //first check in cache and return it
         movieDetailsCache[imdbId]?.let {
             return it

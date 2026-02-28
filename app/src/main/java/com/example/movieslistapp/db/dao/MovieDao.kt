@@ -4,8 +4,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.example.movieslistapp.db.entity.MovieDetailsEntity
 import com.example.movieslistapp.db.entity.MovieEntity
+import com.example.movieslistapp.db.entity.MovieInteractionEntity
 
 @Dao
 interface MovieDao {
@@ -69,4 +71,23 @@ interface MovieDao {
     @Query("SELECT * FROM movie_details ORDER BY year DESC LIMIT 10")
     fun getRecentlyAddedMovies(): List<MovieDetailsEntity>
 
+    // Movie Interaction tracking
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdateInteraction(interaction: MovieInteractionEntity)
+
+    @Query("SELECT * FROM movie_interactions WHERE imdbId = :imdbId")
+    suspend fun getInteraction(imdbId: String): MovieInteractionEntity?
+
+    @Transaction
+    suspend fun incrementOpenCount(imdbId: String) {
+        val current = getInteraction(imdbId)
+        if (current == null) {
+            insertOrUpdateInteraction(MovieInteractionEntity(imdbId, 1))
+        } else {
+            insertOrUpdateInteraction(current.copy(
+                openCount = current.openCount + 1,
+                lastOpenedTimestamp = System.currentTimeMillis()
+            ))
+        }
+    }
 }

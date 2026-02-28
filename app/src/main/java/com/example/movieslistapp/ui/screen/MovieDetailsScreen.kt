@@ -98,6 +98,7 @@ fun MovieDetailsScreen(
     }
 
     LaunchedEffect(imdbId) {
+        viewModel.incrementOpenCount(imdbId)
         viewModel.getMovieDetails(imdbId)
     }
 

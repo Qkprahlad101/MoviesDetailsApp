@@ -31,7 +31,7 @@ val appModule = module {
             androidContext(),
             MovieDatabase::class.java,
             "movies_database"
-        ).addMigrations(MovieDatabase.MIGRATION_1_2, MovieDatabase.MIGRATION_2_3)
+        ).addMigrations(MovieDatabase.MIGRATION_1_2, MovieDatabase.MIGRATION_2_3, MovieDatabase.MIGRATION_3_4)
             .fallbackToDestructiveMigration().build()
     }
 
