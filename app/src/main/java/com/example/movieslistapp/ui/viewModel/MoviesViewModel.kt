@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class MoviesViewModel(
     private val getMoviesRepository: GetMoviesRepository
@@ -114,45 +115,62 @@ class MoviesViewModel(
         emit(trailerUrl)
     }
 
+// In MoviesViewModel.kt
+
     fun loadCarouselData(forceRefresh: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true) }
+
             val selectedGenres = listOf(
-                MovieGenre.AI_SUGGESTIONS,MovieGenre.RECENTLY_ADDED, MovieGenre.ACTION, MovieGenre.COMEDY, MovieGenre.SCI_FI,
-                MovieGenre.DRAMA, MovieGenre.HORROR, MovieGenre.MUSICAL, MovieGenre.THRILLER,
+                MovieGenre.AI_SUGGESTIONS, MovieGenre.RECENTLY_ADDED, MovieGenre.ACTION, MovieGenre.COMEDY,
+                MovieGenre.SCI_FI, MovieGenre.DRAMA, MovieGenre.HORROR, MovieGenre.MUSICAL, MovieGenre.THRILLER
             )
             _carouselGenres.value = selectedGenres.map { it.displayName }
 
-            val moviesByGenre = mutableMapOf<String, List<MovieDetails>>()
-            moviesByGenre[MovieGenre.RECENTLY_ADDED.displayName] = try {
-                getMoviesRepository.getRecentlyAddedMovies()
-            } catch (e: Exception) {
-                emptyList<MovieDetails>()
-            }
-            selectedGenres.filter { it.name != MovieGenre.RECENTLY_ADDED.name }.forEach { genre ->
-                moviesByGenre[genre.displayName] = try {
-                    getMoviesRepository.getMoviesByGenre(genre.name, forceRefresh)
+            // 1. Load "Recently Added" first (Local DB, very fast)
+            launch {
+                try {
+                    val movies = getMoviesRepository.getRecentlyAddedMovies()
+                    if (movies.isNotEmpty()) {
+                        _carouselMovies.update { it + (MovieGenre.RECENTLY_ADDED.displayName to movies) }
+                    }
                 } catch (e: Exception) {
-                    emptyList<MovieDetails>()
+                    Log.e(TAG, "Failed Recently Added", e)
+                } finally {
+                    // Hide global loading once we have at least one row or have tried the fast ones
+                    _uiState.update { it.copy(isLoading = false) }
                 }
             }
 
-            _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
-            _uiState.update { it.copy(isLoading = false) }
-
-            moviesByGenre[MovieGenre.AI_SUGGESTIONS.displayName] = try {
-                getAiSuggestedMovies().also {
-                    Log.d(TAG, "moviesByGenre[MovieGenre.AI_SUGGESTIONS.displayName]: ${it}")
+            // 2. Load other genres in parallel
+            selectedGenres.filter {
+                it != MovieGenre.RECENTLY_ADDED && it != MovieGenre.AI_SUGGESTIONS
+            }.forEach { genre ->
+                launch {
+                    try {
+                        val movies = getMoviesRepository.getMoviesByGenre(genre.name, forceRefresh)
+                        if (movies.isNotEmpty()) {
+                            _carouselMovies.update { it + (genre.displayName to movies) }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed genre ${genre.displayName}", e)
+                    }
                 }
-            } catch (e: Exception) {
-                emptyList<MovieDetails>()
             }
 
-            _carouselMovies.value = moviesByGenre.filter { it.value.isNotEmpty() }
-            _uiState.update { it.copy(isLoading = false) }
+            // 3. Defer AI Suggestions (Slowest task)
+            launch {
+                try {
+                    val aiMovies = getAiSuggestedMovies()
+                    if (aiMovies.isNotEmpty()) {
+                        _carouselMovies.update { it + (MovieGenre.AI_SUGGESTIONS.displayName to aiMovies) }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed AI Suggestions", e)
+                }
+            }
         }
     }
-
     fun getMovieDetails(imdbId: String) {
         _uiState.update { it.copy(isLoading = true, movieDetails = null) } // Clear previous details
         viewModelScope.launch(Dispatchers.IO) {
@@ -170,26 +188,30 @@ class MoviesViewModel(
         }
     }
 
-    suspend fun getAiSuggestedMovies() :  List<MovieDetails> {
+    suspend fun getAiSuggestedMovies(): List<MovieDetails> {
+        val movieValidator = getMoviesRepository.getAiMovieValidator()
         val watchedMovieListRequest = getMoviesRepository.getTopRatedMoviesOverall().take(20).map {
             TrailerRequest(movieTitle = it.Title, year = it.Year, director = it.Director, description = it.Plot, genre = it.Genre)
         }
-        val movieValidator = getMoviesRepository.getAiMovieValidator()
-        Log.d(TAG, "getAiSuggestedMovies: watchedMovieListRequest: $watchedMovieListRequest")
-        try {
-            val suggestedMovies = geminiTrailerService.suggestRelevantMovies(watchedMovieListRequest, validator = movieValidator)
-            Log.d(TAG, "getAiSuggestedMovies: suggestedMovies: $suggestedMovies")
-            suggestedMovies.map { it.first }.forEach { movie ->
-                getMoviesRepository.getMovieDetails(movie.description.toString().split(":")[1])
-            }
-            return suggestedMovies.map { it.first }.map { movie ->
-                getMoviesRepository.getMovieDetails(movie.description.toString().split(":")[1])
+        return try {
+            // Wrap the SDK call in withTimeoutOrNull so it doesn't throw the exception upwards
+            val suggestedMovies = withTimeoutOrNull(25000) {
+                geminiTrailerService.suggestRelevantMovies(watchedMovieListRequest, validator = movieValidator)
+            } ?: emptyList() // Return empty or partial if it times out
+
+            // Map successful results to full details
+            suggestedMovies.mapNotNull { (trailerRequest, _) ->
+                try {
+                    val imdbId = trailerRequest.description?.split(":")?.getOrNull(1)
+                    if (imdbId != null) getMoviesRepository.getMovieDetails(imdbId) else null
+                } catch (e: Exception) { null }
             }
         } catch (e: Exception) {
-            return emptyList<MovieDetails>()
+            Log.e(TAG, "AI Suggestions failed entirely", e)
+            emptyList()
         }
-
     }
+
 
     private var searchJob: Job? = null
     fun getSearchMovieResult(query: String) {

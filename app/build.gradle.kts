@@ -124,7 +124,7 @@ dependencies {
     implementation("com.valentinilk.shimmer:compose-shimmer:1.3.0")
 
     // TrailerAI SDK
-    implementation("com.example.aitrailersdk:trailerai-core:3.0.2")
+    implementation("com.example.aitrailersdk:trailerai-core:3.7.0")
 
     implementation(project(":trailer-player"))
 

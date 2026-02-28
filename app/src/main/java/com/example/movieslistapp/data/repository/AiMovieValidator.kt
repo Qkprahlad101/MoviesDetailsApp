@@ -11,31 +11,24 @@ class AiMovieValidator(
 ) : MovieValidator {
     override suspend fun validateAndGetDetails(title: String): TrailerRequest? {
         return try {
-            // Use a timeout to prevent a single validation from hanging the entire suggestion process.
-            // 10 seconds is usually enough for a single OMDb API call.
-            withTimeoutOrNull(10000) {
-                // Using getMovieByTitle (parameter 't') is more efficient and accurate for validating a specific title
-                // suggested by AI compared to a general search (parameter 's').
+            // Reduced internal timeout to give the overall process more breathing room
+            withTimeoutOrNull(8000) {
                 val movie = apiService.getMovieByTitle(title)
-                Log.d("AiMovieValidator", "validateAndGetDetails, response for '$title': $movie")
-                
                 if (movie.Response == "True") {
-                    Log.d("AiMovieValidator", "validateAndGetDetails, movie found: ${movie.Title} (${movie.Year})")
-                    
-                    // We store the imdbID in the description field with a prefix
-                    // This allows us to retrieve it later without another network search
                     TrailerRequest(
                         movieTitle = movie.Title,
                         year = movie.Year,
                         description = "IMDB_ID:${movie.imdbID}"
                     )
-                } else {
-                    Log.d("AiMovieValidator", "validateAndGetDetails, no movie found for: $title")
-                    null
-                }
+                } else null
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // If the outer scope timed out (the 20s error you see),
+            // we log it and return null to allow the partial list to be returned
+            Log.e("AiMovieValidator", "Validation cancelled/timed out for $title")
+            null
         } catch (e: Exception) {
-            Log.e("AiMovieValidator", "validateAndGetDetails, error validating $title", e)
+            Log.e("AiMovieValidator", "Error validating $title", e)
             null
         }
     }
