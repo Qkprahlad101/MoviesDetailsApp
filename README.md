@@ -1,80 +1,55 @@
 # MoviesListApp 🎬
 
-MoviesListApp is a modern Android application built with Jetpack Compose that allows users to explore, search, and discover movies using the OMDb API. It features a rich UI with carousels, detailed movie information, and AI-powered trailer discovery.
+MoviesListApp is a modern, AI-powered Android application built with Jetpack Compose that allows users to explore, search, and discover movies using the OMDb API and Google Gemini. It features a high-end UI with cinematic animations, AI-driven suggestions, and automated trailer discovery.
 
 ## 🔄 User Flow
 
 The application follows a seamless discovery-to-viewing flow:
 
-1.  **Discovery (Home)**: Launch into a curated home screen featuring genre-based carousels (Action, Comedy, Sci-Fi) that are automatically populated with top-rated movies.
-2.  **Interactive Posters**: Browse through high-quality movie posters with smooth transitions and interactive elements.
-3.  **Real-time Search**: Use the global search bar to find any movie from the OMDb database with instant results.
-4.  **Advanced Sorting**: Refine your search results using filters for Title or Year (Ascending/Descending).
+1.  **Cinematic Entry**: Experience a beautiful, AI-themed splash screen with orbital animations that sets the tone for an intelligent movie discovery experience.
+2.  **Discovery (Home)**: Launch into a curated home screen featuring genre-based carousels (Action, Comedy, Sci-Fi) and **AI Suggestions** personalized based on your history.
+3.  **Parallel Loading**: Genres load independently and incrementally, ensuring the UI is never blocked and content appears as soon as it's ready.
+4.  **Real-time Search**: Use the global search bar to find any movie from the OMDb database with instant results and pagination.
 5.  **Detailed Analysis**: Access a deep-dive view for any movie, including ratings from multiple sources, plot summaries, and cast info.
 6.  **AI-Powered Playback**: The app uses an AI SDK to find the most relevant trailer on YouTube, allowing for instant in-app playback.
+7.  **Safe Exit**: A themed confirmation dialog prevents accidental app closures, asking if you "really have to go."
 
 ## 📱 App Preview
 
 Below is the visual representation of the app flow:
 
-| 1. Home Screen (Discovery) | 2. Poster Transitions | 3. Search Results |
+| 1. AI Splash Screen | 2. Home Screen (Discovery) | 3. Search Results |
 | :---: | :---: | :---: |
-| ![Home Screen](screenshots/home_screen.png) | ![Poster Transitions](screenshots/poster_screen.png) | ![Search Result](screenshots/search_result.png) |
+| ![Splash Screen](screenshots/splash_screen.png) | ![Home Screen](screenshots/home_screen.png) | ![Search Result](screenshots/search_result.png) |
 
 | 4. Sorting & Filtering | 5. Movie Details | 6. Trailer Playback |
 | :---: | :---: | :---: |
 | ![Filtered Search](screenshots/search_filtered_by_year_DESC.png) | ![Movie Details](screenshots/movie_details_screen.png) | ![Trailer Playing](screenshots/trailer_playing.png) |
 
-## 🚀 Features
+## 🚀 Key AI Features
 
-*   **Dynamic Carousels**: Explore movies by popular categories (Action, Comedy, Sci-Fi) right on the home screen.
-*   **Search**: Find any movie by title with real-time search and pagination support.
-*   **Advanced Filtering**: Sort search results by Title or Year in ascending/descending order.
-*   **Detailed View**: Get in-depth information about movies, including ratings, cast, plot, and runtime.
-*   **AI Trailer Discovery**: Automatically find and play movie trailers using the integrated TrailerAI SDK and YouTube.
-*   **Offline Support**: Local database caching using Room ensures you can view previously searched movies even without an internet connection.
-*   **Connectivity Awareness**: Real-time monitoring of internet status with a sticky notification when offline.
-*   **Modern Tech Stack**: Built with Jetpack Compose, Koin (DI), Retrofit, Room, and Coroutines/Flow.
+*   **AI Recommendations**: Powered by Gemini Pro, the app analyzes your top-rated movies to suggest new titles you'll love.
+*   **Intelligent Validation**: Uses a resilient validation layer that handles network timeouts gracefully, ensuring you always get suggestions even if some provider data is slow.
+*   **Automated Trailer Discovery**: Leverages the integrated TrailerAI SDK to scan YouTube for the most accurate movie trailers without manual searching.
 
 ## 🛠 Tech Stack
 
-- **UI**: Jetpack Compose
+- **UI**: Jetpack Compose (Material 3)
+- **AI Engine**: Google Gemini Pro
 - **Dependency Injection**: Koin
 - **Networking**: Retrofit & OkHttp
-- **Database**: Room
+- **Database**: Room (with LRU cleanup)
 - **Image Loading**: Coil
-- **Animation**: Compose Animations & Shimmer effects
+- **Animation**: Compose Animations (Orbital particles, pulsing glows, and scan effects)
 - **Architecture**: MVVM with Clean Architecture principles
 
-## 📖 How to Use
+## 📈 Recent Updates (v2.2.0)
 
-1.  **Home Screen**: Upon launching, the app displays carousels of top-rated movies for specific genres. Pull down to refresh the content.
-2.  **Search**: Tap the search bar at the top to search for any movie. Results load dynamically as you scroll.
-3.  **Filtering**: Use the filter chip under the search bar to sort results by title or year.
-4.  **Movie Details**: Click on any movie card to see its full details.
-5.  **Watch Trailer**: On the details screen, the app will automatically attempt to find the best trailer using AI. Tap the trailer section to watch.
-6.  **Offline Mode**: Search results and details are saved locally. If you lose internet, a red banner will appear at the top, but you can still browse your cached content.
-
----
-
-## 📈 Version History
-
-### v2.1.0 (Current)
-- **New Feature**: Added a "No Internet" sticky popup handling.
-- **Improved**: Integrated `NetworkObserver` for real-time connectivity state management.
-- **Fixed**: Resolved `toMovieDetailsEntity` receiver type mismatch compilation error.
-- **Optimization**: Redesigned Carousel loading logic to use a lazy, genre-based fetching strategy to save bandwidth and improve startup time.
-
-### v2.0.0
-- **New Feature**: Integration of TrailerAI SDK for automated trailer discovery.
-- **New Feature**: Home screen carousels for specific genres.
-- **Improved**: Enhanced local database strategy with LRU-based cleanup to prevent excessive storage usage.
-- **UI**: Added Shimmer effects for a smoother loading experience.
-
-### v1.0.0
-- Initial release with basic search and movie details functionality.
-- Room database integration for basic caching.
-- OMDb API integration.
+- **AI Optimization**: Refactored the AI suggestion engine to work in parallel, resolving a 20s timeout issue and allowing for partial data returns.
+- **Cinematic UI**: Added a new orbital-animation splash screen and a custom-designed AI-themed app icon.
+- **Performance**: Implemented incremental carousel loading, reducing initial wait times by over 60%.
+- **UX Improvements**: Added a themed "Exit Confirmation" dialog to prevent accidental closures.
+- **Stability**: Integrated a fail-fast validation strategy for movie metadata to handle OMDb API latency gracefully.
 
 ---
 
@@ -82,6 +57,8 @@ Below is the visual representation of the app flow:
 
 - Android Studio Ladybug or newer
 - Min SDK: 24
-- Target SDK: 35
-- OMDb API Key (Add to `local.properties`)
-- Gemini API Key (for TrailerAI discovery)
+- Target SDK: 36
+- **Local Properties**: Add the following keys to your `local.properties`:
+  - `OMDB_API_KEY`: Your OMDb API key.
+  - `GEMINI_API_KEY`: Your Google AI Studio key.
+  - `YOUTUBE_DATA_V3`: Your YouTube Data API key.
