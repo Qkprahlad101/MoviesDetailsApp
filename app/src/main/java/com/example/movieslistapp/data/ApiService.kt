@@ -21,11 +21,10 @@ interface ApiService {
     ): MovieDetails
 
     @GET("/")
-    suspend fun getMoviesByTitle(
-        @Query("t") query: String,  // e.g. "Action", "sci-fi horror", "Marvel superhero"
-        @Query("page") page: Int = 1,
+    suspend fun getMovieByTitle(
+        @Query("t") title: String,
         @Query("y") year: String? = null,
         @Query("type") type: String = "movie",
-    ): MovieResponse
+    ): MovieDetails
 
 }
