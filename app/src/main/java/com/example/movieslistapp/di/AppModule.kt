@@ -1,6 +1,7 @@
 package com.example.movieslistapp.di
 
 import androidx.room.Room
+import com.example.movieslistapp.BuildConfig
 import com.example.movieslistapp.BuildConfig.API_KEY
 import com.example.movieslistapp.data.ApiService
 import com.example.movieslistapp.data.repository.GetMoviesRepository
@@ -17,7 +18,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 val appModule = module {
     single {
         HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.ENABLE_LOGS) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
     }
 
@@ -26,9 +31,8 @@ val appModule = module {
             androidContext(),
             MovieDatabase::class.java,
             "movies_database"
-        ).addMigrations(MovieDatabase.MIGRATION_1_2)
+        ).addMigrations(MovieDatabase.MIGRATION_1_2, MovieDatabase.MIGRATION_2_3)
             .fallbackToDestructiveMigration().build()
-
     }
 
     single{ get<MovieDatabase>().movieDao()}

@@ -33,12 +33,22 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("Boolean", "ENABLE_LOGS", "true")
+            applicationIdSuffix = ".debug"
+            isDebuggable = true
+        }
         release {
-            isMinifyEnabled = false
+            // Disable logging in release mode
+            buildConfigField("Boolean", "ENABLE_LOGS", "false")
+
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -124,7 +134,7 @@ dependencies {
     implementation("com.valentinilk.shimmer:compose-shimmer:1.3.0")
 
     // TrailerAI SDK
-    implementation("com.example.aitrailersdk:trailerai-core:3.7.0")
+    implementation("com.example.aitrailersdk:trailerai-core:3.8.0")
 
     implementation(project(":trailer-player"))
 
