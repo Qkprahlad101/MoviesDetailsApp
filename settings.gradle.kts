@@ -16,9 +16,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven {
-            url = uri("/Users/prahladkumar/AndroidStudioProjects/AiTrailerSDK/app/build/localRepo")
-        }
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
