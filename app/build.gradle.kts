@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.adapters)
+    implementation(libs.androidx.compose.material3)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -132,6 +133,12 @@ dependencies {
 
     //shimmer dependency
     implementation("com.valentinilk.shimmer:compose-shimmer:1.3.0")
+
+    //animation dependencies
+    implementation("com.airbnb.android:lottie-compose:6.4.0")
+    
+    //hilt animation
+    implementation("androidx.compose.animation:animation:1.6.8")
 
     // TrailerAI SDK
     implementation("com.github.Qkprahlad101:AiTrailerSDK:v3.9.0")

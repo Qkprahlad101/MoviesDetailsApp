@@ -2,7 +2,20 @@ package com.example.movieslistapp.ui.screen
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +61,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +75,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.SubcomposeAsyncImage
 import com.example.movieslistapp.data.model.Movie
 import com.example.movieslistapp.ui.PaginationHelper
+import com.example.movieslistapp.ui.components.AnimatedBackground
+import com.example.movieslistapp.ui.components.AnimatedMovieItem
+import com.example.movieslistapp.ui.components.FuturisticLoadingIndicator
+import com.example.movieslistapp.ui.components.FuturisticGradientOverlay
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerMovieItem
 import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
@@ -172,52 +191,66 @@ fun MoviesListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    elevation = CardDefaults.cardElevation(8.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(12.dp),
+                    shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
                     )
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "🎬 Discover Movies",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-
-                        OutlinedTextField(
-                            modifier = Modifier.fillMaxWidth(),
-                            value = query,
-                            onValueChange = { viewModel.updateSearchQuery(it) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            trailingIcon = {
-                                if (query.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Clear")
-                                    }
-                                }
-                            },
-                            placeholder = {
-                                Text(
-                                    text = "Search for your favorite movies...",
-                                    style = TextStyle(
-                                        color = MaterialTheme.colorScheme.inversePrimary,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Normal
-                                    ),
-                                    modifier = Modifier.fillMaxWidth(),
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF1A1A2E).copy(alpha = 0.05f),
+                                        Color(0xFF16213E).copy(alpha = 0.1f),
+                                        Color(0xFF0F3460).copy(alpha = 0.05f)
+                                    )
                                 )
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                             )
-                        )
+                            .padding(16.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = "🎬 Discover Movies",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = query,
+                                onValueChange = { viewModel.updateSearchQuery(it) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                trailingIcon = {
+                                    if (query.isNotEmpty()) {
+                                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                        }
+                                    }
+                                },
+                                placeholder = {
+                                    Text(
+                                        text = "Search for your favorite movies...",
+                                        style = TextStyle(
+                                            color = MaterialTheme.colorScheme.inversePrimary,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Normal
+                                        ),
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                )
+                            )
+                        }
                     }
                 }
 
@@ -286,6 +319,10 @@ fun MoviesListScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
+            // Animated background
+            AnimatedBackground()
+            FuturisticGradientOverlay()
+            
             if (state.value.movies.isEmpty() && !state.value.isLoading && query.isEmpty()) {
                 if (isCarouselLoading) {
                     // Show shimmer loading state
@@ -339,11 +376,20 @@ fun MoviesListScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "No movies in database. Start searching!",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            FuturisticLoadingIndicator(
+                                modifier = Modifier.size(80.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "No movies in database. Start searching!",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -391,10 +437,12 @@ fun MoviesListScreen(
                     item {
                         DropdownMenu(expanded = filterDropDownExpanded, onDismissRequest = {}) { }
                     }
-                    items(sortedMovies, key = { it.imdbID }) {
-                        MovieItem(it) {
-                            onMovieClick(it.imdbID)
-                        }
+                    items(sortedMovies, key = { it.imdbID }) { movie ->
+                        AnimatedMovieItem(
+                            movie = movie,
+                            onMovieClick = { onMovieClick(movie.imdbID) },
+                            isVisible = true
+                        )
                     }
                 }
             }
@@ -405,7 +453,10 @@ fun MoviesListScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    FuturisticLoadingIndicator(
+                        modifier = Modifier.size(64.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
 
             }
