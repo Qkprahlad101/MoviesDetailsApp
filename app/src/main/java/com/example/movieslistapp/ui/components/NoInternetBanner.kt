@@ -5,6 +5,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
@@ -16,11 +18,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.movieslistapp.ui.theme.Error
+import com.example.movieslistapp.ui.theme.GlassOverlay
 import com.example.movieslistapp.utils.NetworkObserver
 
 @Composable
@@ -48,19 +53,32 @@ fun NoInternetBanner(
         exit = shrinkVertically() + fadeOut()
     ) {
         Surface(
-            color = Color.Red.copy(alpha = 0.9f),
+            color = Error.copy(alpha = 0.9f),
             modifier = modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "No internet: Turn on internet for new movies",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp)
-            )
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Error.copy(alpha = 0.8f),
+                                GlassOverlay.copy(alpha = 0.3f)
+                            )
+                        )
+                    )
+            ) {
+                Text(
+                    text = "No internet: Turn on internet for new movies",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                )
+            }
         }
     }
 }
@@ -88,19 +106,32 @@ fun RefreshNoInternetBanner(
         exit = shrinkVertically() + fadeOut()
     ) {
         Surface(
-            color = Color.Red.copy(alpha = 0.9f),
+            color = Error.copy(alpha = 0.9f),
             modifier = modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "No internet: Cannot refresh movies",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp)
-            )
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Error.copy(alpha = 0.8f),
+                                GlassOverlay.copy(alpha = 0.3f)
+                            )
+                        )
+                    )
+            ) {
+                Text(
+                    text = "No internet: Cannot refresh movies",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                )
+            }
         }
     }
 }

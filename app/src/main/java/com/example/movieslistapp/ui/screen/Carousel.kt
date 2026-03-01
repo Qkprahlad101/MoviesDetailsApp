@@ -49,6 +49,7 @@ import coil.compose.SubcomposeAsyncImage
 import com.example.movieslistapp.data.model.MovieDetails
 import com.example.movieslistapp.ui.components.AnimatedCarouselMovieItem
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
+import com.example.movieslistapp.ui.components.GlassCarouselMovieItem
 import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
 
 // Add these new composables
@@ -76,7 +77,7 @@ fun CategoryCarouselSection(
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
             items(movies) { movie ->
-                AnimatedCarouselMovieItem(movie, onMovieClick)
+                GlassCarouselMovieItem(movie, onMovieClick)
             }
         }
     }

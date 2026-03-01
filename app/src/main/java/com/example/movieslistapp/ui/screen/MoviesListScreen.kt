@@ -34,13 +34,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -81,6 +80,10 @@ import com.example.movieslistapp.ui.components.FuturisticLoadingIndicator
 import com.example.movieslistapp.ui.components.FuturisticGradientOverlay
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerMovieItem
+import com.example.movieslistapp.ui.theme.DeepSpace
+import com.example.movieslistapp.ui.theme.GlassOverlay
+import com.example.movieslistapp.ui.theme.NebulaPurple
+import com.example.movieslistapp.ui.theme.AuroraCyan
 import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
 import com.example.movieslistapp.ui.viewModel.MoviesViewModel
 import com.example.movieslistapp.utils.SortOption
@@ -123,7 +126,7 @@ fun MoviesListScreen(
             onDismissRequest = { showExitDialog = false },
             icon = {
                 Icon(
-                    imageVector = Icons.Default.ExitToApp,
+                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -191,10 +194,10 @@ fun MoviesListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    elevation = CardDefaults.cardElevation(12.dp),
-                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(16.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                        containerColor = GlassOverlay.copy(alpha = 0.8f)
                     )
                 ) {
                     Box(
@@ -203,13 +206,13 @@ fun MoviesListScreen(
                             .background(
                                 Brush.linearGradient(
                                     colors = listOf(
-                                        Color(0xFF1A1A2E).copy(alpha = 0.05f),
-                                        Color(0xFF16213E).copy(alpha = 0.1f),
-                                        Color(0xFF0F3460).copy(alpha = 0.05f)
+                                        DeepSpace.copy(alpha = 0.1f),
+                                        NebulaPurple.copy(alpha = 0.05f),
+                                        AuroraCyan.copy(alpha = 0.1f)
                                     )
                                 )
                             )
-                            .padding(16.dp)
+                            .padding(20.dp)
                     ) {
                         Column {
                             Text(
@@ -217,7 +220,7 @@ fun MoviesListScreen(
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 12.dp)
+                                modifier = Modifier.padding(bottom = 16.dp)
                             )
 
                             OutlinedTextField(
@@ -244,7 +247,7 @@ fun MoviesListScreen(
                                     )
                                 },
                                 singleLine = true,
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(20.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                                     unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)

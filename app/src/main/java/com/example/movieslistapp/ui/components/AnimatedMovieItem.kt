@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.example.movieslistapp.data.model.Movie
 import com.example.movieslistapp.ui.screen.shimmer.ShimmerBrush
-import com.example.movieslistapp.ui.screen.utils.MovieImagePlaceholder
+import com.example.movieslistapp.ui.components.GlassMovieItem
 
 @Composable
 fun AnimatedMovieItem(
@@ -61,156 +61,13 @@ fun AnimatedMovieItem(
     modifier: Modifier = Modifier,
     isVisible: Boolean = true
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "movie_item_animation")
-    
-    val shimmerOffset by infiniteTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmer_offset"
+    // Use the new glass morphism movie item
+    GlassMovieItem(
+        movie = movie,
+        onMovieClick = onMovieClick,
+        modifier = modifier,
+        isVisible = isVisible
     )
-
-    AnimatedVisibility(
-        visible = isVisible,
-        enter = slideInHorizontally(
-            initialOffsetX = { it },
-            animationSpec = tween(300, easing = FastOutSlowInEasing)
-        ) + fadeIn(animationSpec = tween(300)),
-        exit = slideOutHorizontally(
-            targetOffsetX = { -it },
-            animationSpec = tween(300, easing = FastOutSlowInEasing)
-        ) + fadeOut(animationSpec = tween(300))
-    ) {
-        Card(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(
-                        bounded = true,
-                        radius = 8.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                ) { onMovieClick() }
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(16.dp),
-                    ambientColor = Color(0xFF533483).copy(alpha = 0.3f),
-                    spotColor = Color(0xFFE94560).copy(alpha = 0.2f)
-                ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 6.dp,
-                pressedElevation = 12.dp
-            ),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(100.dp, 150.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0xFF1A1A2E).copy(alpha = 0.1f),
-                                    Color(0xFF16213E).copy(alpha = 0.05f)
-                                )
-                            )
-                        )
-                ) {
-                    SubcomposeAsyncImage(
-                        model = movie.Poster,
-                        contentDescription = movie.Title,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop,
-                        loading = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(ShimmerBrush())
-                            )
-                        },
-                        error = {
-                            MovieImagePlaceholder(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(12.dp)),
-                                showIcon = true
-                            )
-                        }
-                    )
-                    
-                    // Subtle gradient overlay
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color(0xFF1A1A2E).copy(alpha = 0.2f)
-                                    )
-                                )
-                            )
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = movie.Title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 2
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Text(
-                        text = "Year: ${movie.Year}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    androidx.compose.material3.SuggestionChip(
-                        onClick = { onMovieClick() },
-                        label = {
-                            Text(
-                                text = "View Details",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = androidx.compose.material3.SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            labelColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable
