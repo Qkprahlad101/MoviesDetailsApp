@@ -321,6 +321,7 @@ fun MoviesListScreen(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
+                .clip(RoundedCornerShape(12.dp))
         ) {
             // Animated background
             AnimatedBackground()
