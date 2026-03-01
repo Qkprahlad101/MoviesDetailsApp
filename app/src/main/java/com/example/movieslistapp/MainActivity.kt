@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.movieslistapp.ui.components.NoInternetBanner
 import com.example.movieslistapp.ui.screen.MovieDetailsScreen
 import com.example.movieslistapp.ui.screen.MoviesListScreen
 import com.example.movieslistapp.ui.screen.Screen
@@ -74,7 +75,7 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     Box(modifier = Modifier.fillMaxSize()) {
                         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                            // Sticky No Internet Popup
+
                             NoInternetBanner(networkStatus)
 
                             NavHost(
@@ -110,29 +111,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun NoInternetBanner(status: NetworkObserver.Status) {
-    AnimatedVisibility(
-        visible = status == NetworkObserver.Status.Lost || status == NetworkObserver.Status.Unavailable,
-        enter = expandVertically(),
-        exit = shrinkVertically()
-    ) {
-        Surface(
-            color = Color.Red.copy(alpha = 0.9f),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "No internet: Turn on internet for new movies",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(8.dp)
-            )
         }
     }
 }
