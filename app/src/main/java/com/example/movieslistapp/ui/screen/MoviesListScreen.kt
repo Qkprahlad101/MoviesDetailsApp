@@ -163,7 +163,7 @@ fun MoviesListScreen(
                     Text(
                         text = "Kidding!! \uD83D\uDE06",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.background
+                        color = MaterialTheme.colorScheme.surfaceTint
                     )
                 }
             },
