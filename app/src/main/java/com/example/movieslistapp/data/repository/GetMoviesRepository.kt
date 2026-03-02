@@ -135,6 +135,12 @@ class GetMoviesRepository(
         return movieDao.getTopRatedMoviesOverall().map { it.toMovieDetails() }
     }
 
+    //Returns user's favourite movies only if user has clicked on atleast 5 movies
+    suspend fun getUserFavouriteMovies(noOfMovies: Int = 10): List<MovieDetails> {
+        val favouriteMovies = movieDao.getUserFavouriteMovies(noOfMovies).map { it.toMovieDetails() }
+        return  if(favouriteMovies.size >= 5) favouriteMovies else emptyList<MovieDetails>()
+    }
+
     suspend fun getTrailerUrlFromDb(imdbId: String): String? {
         // Check movie_details table first as it's more likely to have detailed info
         return movieDao.getMovieDetailsTrailer(imdbId) ?: movieDao.getMovieTrailer(imdbId)

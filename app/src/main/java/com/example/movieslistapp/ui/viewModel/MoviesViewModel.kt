@@ -187,9 +187,13 @@ class MoviesViewModel(
     }
 
     suspend fun getAiSuggestedMovies(): List<MovieDetails> {
-        val watchedMovieListRequest = getMoviesRepository.getTopRatedMoviesOverall().take(20).map {
+        val watchedMovieListRequest = getMoviesRepository.getUserFavouriteMovies().take(10).map {
             TrailerRequest(movieTitle = it.Title, year = it.Year, director = it.Director, description = it.Plot, genre = it.Genre)
         }
+        if (watchedMovieListRequest.isEmpty()) { //if no favourite movies yet, dont look call Gemini.
+            return emptyList()
+        }
+
         val movieValidator = getMoviesRepository.getAiMovieValidator()
         Log.d(TAG, "getAiSuggestedMovies: watchedMovieListRequest: $watchedMovieListRequest")
         
