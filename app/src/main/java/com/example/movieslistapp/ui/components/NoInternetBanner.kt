@@ -32,19 +32,33 @@ import com.example.movieslistapp.utils.NetworkObserver
 fun NoInternetBanner(
     status: NetworkObserver.Status,
     showOnRefresh: Boolean = false,
-    duration: Int = 4000,
+    duration: Int = 2000, // Reduced from 4000 to 2000 for efficiency
     modifier: Modifier = Modifier
 ) {
     var showBanner by remember { mutableStateOf(false) }
+    var lastStatus by remember { mutableStateOf(NetworkObserver.Status.Available) }
     
-    // Show banner when internet is lost or during refresh
+    // Only trigger LaunchedEffect when status actually changes
     LaunchedEffect(status, showOnRefresh) {
-        if (status == NetworkObserver.Status.Lost || 
-            showOnRefresh) {
-            showBanner = true
-            kotlinx.coroutines.delay(duration.toLong())
-            showBanner = false
+        when {
+            // Status changed from Available to Lost
+            lastStatus != NetworkObserver.Status.Lost && status == NetworkObserver.Status.Lost -> {
+                showBanner = true
+                kotlinx.coroutines.delay(duration.toLong())
+                showBanner = false
+            }
+            // Status changed from Lost to Available
+            lastStatus == NetworkObserver.Status.Lost && status == NetworkObserver.Status.Available -> {
+                showBanner = false
+            }
+            // Refresh scenario
+            showOnRefresh && status == NetworkObserver.Status.Lost -> {
+                showBanner = true
+                kotlinx.coroutines.delay(1500) // Shorter duration for refresh
+                showBanner = false
+            }
         }
+        lastStatus = status
     }
     
     AnimatedVisibility(
@@ -90,14 +104,27 @@ fun RefreshNoInternetBanner(
     modifier: Modifier = Modifier
 ) {
     var showBanner by remember { mutableStateOf(false) }
+    var lastRefreshState by remember { mutableStateOf(false) }
     
-    // Show banner only when refreshing AND no internet
+    // Only trigger when refresh state or network status actually changes
     LaunchedEffect(isRefreshing, networkStatus) {
-        if (isRefreshing && (networkStatus == NetworkObserver.Status.Lost)) {
-            showBanner = true
-            kotlinx.coroutines.delay(3000) // 3 seconds for refresh
-            showBanner = false
+        when {
+            // Refresh started and no internet
+            !lastRefreshState && isRefreshing && networkStatus == NetworkObserver.Status.Lost -> {
+                showBanner = true
+                kotlinx.coroutines.delay(1500) // Short duration for efficiency
+                showBanner = false
+            }
+            // Internet restored during refresh
+            isRefreshing && networkStatus == NetworkObserver.Status.Available -> {
+                showBanner = false
+            }
+            // Refresh ended
+            lastRefreshState && !isRefreshing -> {
+                showBanner = false
+            }
         }
+        lastRefreshState = isRefreshing
     }
     
     AnimatedVisibility(
@@ -144,8 +171,8 @@ fun HomeScreenNoInternetBanner(
 ) {
     NoInternetBanner(
         status = networkStatus,
-        showOnRefresh = isRefreshing && (networkStatus == NetworkObserver.Status.Lost),
-        duration = if (isRefreshing) 3000 else 4000,
+        showOnRefresh = isRefreshing,
+        duration = if (isRefreshing) 1500 else 2000, // Updated durations
         modifier = modifier.fillMaxWidth()
     )
 }

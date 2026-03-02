@@ -31,9 +31,13 @@ Below is the visual representation of the app flow:
 | :---: | :---: | :---: |
 | ![Splash Screen](screenshots/splash_screen.png) | ![Home Screen](screenshots/home_screen.png) | ![Search Result](screenshots/search_result.png) |
 
-| 4. Sorting & Filtering | 5. Movie Details | 6. Trailer Playback |
+| 4. Filter Options | 5. Filtered Results | 6. Movie Details |
 | :---: | :---: | :---: |
-| ![Filtered Search](screenshots/search_filtered_by_year_DESC.png) | ![Movie Details](screenshots/movie_details_screen.png) | ![Trailer Playing](screenshots/trailer_playing.png) |
+| ![Filter Options](screenshots/search_filter_options.png) | ![Filtered Results](screenshots/search_filtered_results.png) | ![Movie Details](screenshots/movie_details_screen.png) |
+
+| 7. Trailer in Details | 8. Full Screen Trailer | 9. Movie Poster View |
+| :---: | :---: | :---: |
+| ![Trailer in Details](screenshots/trailer_playing_in_details_screen.png) | ![Full Screen Trailer](screenshots/trailer_full_screen.png) | ![Movie Poster](screenshots/movie_poster.png) |
 
 ## 🎯 AI Features
 
