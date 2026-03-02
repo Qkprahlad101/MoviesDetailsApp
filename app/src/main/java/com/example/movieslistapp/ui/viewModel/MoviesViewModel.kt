@@ -13,6 +13,7 @@ import com.example.aitrailersdk.core.config.TrailerAiConfig
 import com.example.aitrailersdk.core.impl.GeminiTrailerService
 import com.example.aitrailersdk.core.model.TrailerRequest
 import com.example.movieslistapp.utils.MovieGenre
+import com.example.movieslistapp.utils.Utils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -49,6 +50,10 @@ class MoviesViewModel(
     private var isFirstLoad = true
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    // AI Suggestion Cache
+    private var cachedAiSuggestions: List<MovieDetails>? = null
+    private var lastAiSuggestionTimestamp: Long = 0
 
     companion object {
         private const val TAG = "MoviesViewModel"
@@ -187,10 +192,21 @@ class MoviesViewModel(
     }
 
     suspend fun getAiSuggestedMovies(): List<MovieDetails> {
+        val currentTime = System.currentTimeMillis()
+        
+        // Check if we have valid cached suggestions
+        cachedAiSuggestions?.let { cached ->
+            if (currentTime - lastAiSuggestionTimestamp < Utils.AI_SUGGESTION_CACHE_DURATION_MS) {
+                Log.d(TAG, "Returning cached AI suggestions. Age: ${currentTime - lastAiSuggestionTimestamp}ms")
+                return cached
+            }
+        }
+        
+        // No valid cache, fetch new suggestions
         val watchedMovieListRequest = getMoviesRepository.getUserFavouriteMovies().take(10).map {
             TrailerRequest(movieTitle = it.Title, year = it.Year, director = it.Director, description = it.Plot, genre = it.Genre)
         }
-        if (watchedMovieListRequest.isEmpty()) { //if no favourite movies yet, dont look call Gemini.
+        if (watchedMovieListRequest.isEmpty()) { //if no favourite movies yet, dont call Gemini.
             return emptyList()
         }
 
@@ -205,7 +221,7 @@ class MoviesViewModel(
             
             Log.d(TAG, "getAiSuggestedMovies: suggestedMovies: $suggestedMovies")
             
-            suggestedMovies.mapNotNull { (movie, _) ->
+            val result = suggestedMovies.mapNotNull { (movie, _) ->
                 try {
                     val imdbId = movie.description?.split(":")?.getOrNull(1)
                     if (imdbId != null) {
@@ -216,10 +232,27 @@ class MoviesViewModel(
                     null
                 }
             }
+            
+            // Update cache
+            cachedAiSuggestions = result
+            lastAiSuggestionTimestamp = currentTime
+            Log.d(TAG, "AI suggestions cached. Size: ${result.size}")
+            
+            result
         } catch (e: Exception) {
             Log.e(TAG, "Error in getAiSuggestedMovies", e)
             emptyList<MovieDetails>()
         }
+    }
+
+    /**
+     * Manually clear AI suggestion cache
+     * Useful for testing or when user wants fresh recommendations
+     */
+    fun clearAiSuggestionCache() {
+        cachedAiSuggestions = null
+        lastAiSuggestionTimestamp = 0
+        Log.d(TAG, "AI suggestion cache cleared")
     }
 
     private var searchJob: Job? = null
